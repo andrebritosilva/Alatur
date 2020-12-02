@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"	elementFormDefault="qualified">
+	<xs:include schemaLocation="../totvsmsg.xsd"/>
+	<xs:include schemaLocation="../types/ListOfInternalId_1_000.xsd"/>
+	<xs:annotation>
+		<xs:appinfo>
+			<MessageDocumentation>
+				<Name>TravelAgent</Name>
+				<Description>Agentes de Viagem</Description>
+				<ProductInformation product="PROTHEUS">
+					<Contact>SIGATUR</Contact>
+					<Adapter>TURI007.PRW</Adapter>
+					<Send>
+						<Insert>SIM</Insert>
+						<Update>SIM</Update>
+						<Delete>SIM</Delete>
+					</Send>
+					<Receive>
+						<Insert>SIM</Insert>
+						<Update>SIM</Update>
+						<Delete>SIM</Delete>
+					</Receive>
+				</ProductInformation>
+			</MessageDocumentation>
+		</xs:appinfo>
+	</xs:annotation>
+	<xs:complexType name="BusinessContentType">
+		<xs:sequence minOccurs="0" maxOccurs="1">
+			<xs:element name="CompanyId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Empresa</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BranchId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Filial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CompanyInternalId" maxOccurs="1" minOccurs="1" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>InternalId da chave Empresa+Filial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Code" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Código</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="InternalId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>InternalId</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Name" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Nome do Agente</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="TypeOfAgent" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Tipo de Agente (1=Consultor;=Promotor;3=Gerente;4=Supervisor)</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"/>
+						<xs:enumeration value="2"/>
+						<xs:enumeration value="3"/>
+						<xs:enumeration value="4"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="IntegrationCode" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Código de integração do agente com o sistema de Front Office da agência</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="TypeOfAttendanceCorp" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Postos de Atendimento do Segmento Corporativo (1=Todos;2=Listados;3=Nenhum)</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"/>
+						<xs:enumeration value="2"/>
+						<xs:enumeration value="3"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="TypeOfAttendanceEve" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Postos de Atendimento do Segmento Eventos (1=Todos;2=Listados;3=Nenhum)</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"/>
+						<xs:enumeration value="2"/>
+						<xs:enumeration value="3"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="TypeOfAttendanceRec" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Postos de Atendimento do Segmento Lazer (1=Todos;2=Listados;3=Nenhum)</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"/>
+						<xs:enumeration value="2"/>
+						<xs:enumeration value="3"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="Blocked" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Bloqueado? ( "1"-Sim / "2"-Não )</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"/>
+						<xs:enumeration value="2"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="ListOfServiceStation"  type="ListOfServiceStationType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Séries de Internal ID's (Itens/Detalhe)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfServiceStationType">
+		<xs:sequence>
+			<xs:element name="ServiceStation"  type="ServiceStationType" minOccurs="0" maxOccurs="unbounded" >
+				<xs:annotation>
+					<xs:documentation>Definições de Detalhe dos Itens</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ServiceStationType">
+		<xs:sequence>
+			<xs:element name="ServiceStationCode" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código do Detalhe</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ServiceStationSegment" maxOccurs="1"
+				minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Tipo de Segmento(1=Corporativo;2=Eventos;3=Lazer)</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value="3"></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+            <xs:element name="ServiceStationInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalID do Detalhe</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+        </xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ReturnContentType">
+		<xs:sequence>
+			<xs:element name="ListOfInternalId"  type="ListOfInternalIdType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Séries de Internal ID's (Itens/Detalhe)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="BusinessContent" type="BusinessContentType" substitutionGroup="AbstractBusinessContent"/>
+	<xs:element name="ReturnContent" type="ReturnContentType" substitutionGroup="AbstractReturnContent"/>
+</xs:schema>

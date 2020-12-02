@@ -1,0 +1,129 @@
+<html>
+	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+	<head>
+		<title>Demonstrativo de Cobran&ccedil;a - Apura&ccedil;&atilde;o de Receita de Fornecedor</title>
+		<style type="text/css">
+			td { font-family:verdana; font-size:12px}
+			p  { font-family:verdana;}
+		</style>
+	</head>
+	<body>
+		<table style="border:2px; border-style: ridge; " width="100%">
+			<!-- CABECALHO -->
+			<tr>
+				<td>
+					<table>
+						<tr><td colspan="2">&nbsp;</td></tr>
+						<tr align="center">
+							<td width="20%" align="center" valign="top"><img src="logo_cliente_04.png"></td>
+							<td width="80%">
+								<table width="100%">
+									<tr><td align="center"><font size="4"><b>Jaragua Turismo Ltda</b></font></td></tr>
+									<tr><td align="center">Rua Presidente Epitacio Pessoa, 85 - Sala 02</td></tr>
+									<tr><td align="center">CENTRO - CEP: 89251-100</td></tr>
+									<tr><td align="center">JARAGUA DO SUL - SC</td></tr>
+									<tr><td align="center">TELEFONE: +55 4730548200</td></tr>
+								<table>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr><td colspan="2" width="100%" align="center"><font size="4"><br/><br/><br/><b>DEMONSTRATIVO DE COBRAN&Ccedil;A <br/>(#CODAPU#)</b></font><hr/></td></tr>
+		</table>
+		<table>
+			<!-- CORPO -->
+			<tr>
+				<td width="100%">
+					<table>
+						<!-- 1: DADOS DO FORNECEDOR -->
+						<tr>
+							<td>
+								<table>
+									<tr>
+										<td><b>PARA:</b></td>
+										<td>#A2_COD# - #A2_NREDUZ#</td>
+									</tr>
+									<tr>
+										<td>&nbsp;</td>
+										<td>#G4V_ENDER# - #G4V_BAIRRO#</td>
+									</tr>
+									<tr>
+										<td>&nbsp;</td>
+										<td>CEP: #G4V_CEP# - #G4V_NOMMUN#/#G4V_UF# - #G4V_NMPAIS#</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+						<tr><td>&nbsp;</td></tr>
+						<!-- 2: TEXTO 1 -->
+						<tr>
+							<td>
+								<table>
+									<tr><td><b>A/C: Departamento de Cobran&ccedil;a</b></td></tr>
+									<tr><td>&nbsp;</td></tr>
+									<tr><td>Prezados, </td></tr>
+									<tr><td>Informamos que at&eacute; a presente data #DATAATUAL#, n&atilde;o registramos o recebimento dos valores referente a(s) transa&ccedil;&atilde;o(&otilde;es) realizadas e que est&aacute;(&atilde;o) relacionada(s) abaixo:</td></tr>
+								</table>
+							</td>
+						</tr>
+						<!-- 3: ITENS DE VENDA -->
+						<tr>
+							<td width="100%">
+								<table width="100%" style="border:2px; border-style: solid; ">
+									<tr bgcolor="#076881">
+										<td width="20%" align="center"><font color="#FFFFFF" size="2px">Cliente      </font></td>
+										<td width="15%" align="center"><font color="#FFFFFF" size="2px">Voucher      </font></td>
+										<td width="10%" align="center"><font color="#FFFFFF" size="2px">Confirma&ccedil;&atilde;o  </font></td>
+										<td width="10%" align="center"><font color="#FFFFFF" size="2px">IATA         </font></td>
+										<td width="10%" align="center"><font color="#FFFFFF" size="2px">Check IN     </font></td>
+										<td width="10%" align="center"><font color="#FFFFFF" size="2px">Check OUT    </font></td>
+										<td width="05%" align="center"><font color="#FFFFFF" size="2px">Moeda        </font></td>
+										<td width="10%" align="center"><font color="#FFFFFF" size="2px">Tarifa       </font></td>
+										<td width="10%" align="center"><font color="#FFFFFF" size="2px">Valor Cobrado</font></td>
+									</tr>
+									#ITENS_DE_VENDA#
+								</table>
+							</td>
+						</tr>
+						<!-- 4: TEXTO 2 -->
+						<tr>
+							<td>
+								<table>
+									<tr><td>Totalizando: R$ #TOTAL#</td></tr>
+									<tr><td>Solicitamos a confirma&ccedil;&atilde;o dos per&iacute;odos de reserva e dos valores informados acima para emiss&atilde;o da Nota Fiscal.</td></tr>
+									<tr><td>Caso exista alguma diverg&ecirc;ncia, favor responder identificando-a(s).</td></tr>
+									<tr><td>No caso desta(s) pend&ecirc;ncia(s) j&aacute; ter(em) sido regularizada(s), favor desconsiderar essa cobran&ccedil;a e informar a data e o valor do pagamento realizado.</td></tr>
+								</table>
+							</td>
+						</tr>
+						<tr><td>&nbsp;</td></tr>
+						<!-- 5: DADOS BANCARIOS -->
+						<tr>
+							<td>
+								<table>
+									<tr><td><b>DADOS BANC&Aacute;RIOS PARA PAGAMENTO</b></td></tr>
+									<tr><td><b>Banco: 237 - BANCO BRADESCO</b> </td></tr>
+									<tr><td><b>Ag&ecirc;ncia: 0356 - 5</b> </td></tr>
+									<tr><td><b>Conta: 52938 - 9</b> </td></tr>
+								</table>
+							</td>
+						</tr>
+						<tr><td>&nbsp;</td></tr>
+						<!-- 5: TEXTO 3 -->
+						<tr>
+							<td>
+								<table>
+									<tr><td>Em caso de duvidas contatar atraves dos telefones (047) 3054-8200 ou 3054-8231  com Francieli</td></tr>
+									<tr><td>Atenciosamente,</td></tr>
+									<tr><td>&nbsp;</td></tr>
+									<tr><td>EQUIPE - #M0_NOMECOM#</td></tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+	</body>
+</html>

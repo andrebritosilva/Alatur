@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"	elementFormDefault="qualified">
+  <xs:include schemaLocation="../totvsmsg.xsd"></xs:include>
+  <xs:include schemaLocation="../types/ListOfInternalId_1_000.xsd"></xs:include>
+  <xs:annotation>
+		<xs:appinfo>
+			<MessageDocumentation>
+				<Name>ServiceClass</Name>
+				<Description>Cadastro de Classe de Serviços</Description>
+				<ProductInformation product="PROTHEUS">
+					<Contact>SIGATUR</Contact>
+					<Adapter>TURI003.PRW</Adapter>
+					<Send>
+						<Insert>SIM</Insert>
+						<Update>SIM</Update>
+						<Delete>SIM</Delete>
+					</Send>
+					<Receive>
+						<Insert>SIM</Insert>
+						<Update>SIM</Update>
+						<Delete>SIM</Delete>
+					</Receive>
+				</ProductInformation>
+			</MessageDocumentation>
+		</xs:appinfo>
+	</xs:annotation>
+  <xs:complexType name="BusinessContentType">
+		<xs:sequence minOccurs="0" maxOccurs="1">
+			<xs:element name="CompanyId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Empresa</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BranchId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Filial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CompanyInternalId" maxOccurs="1" minOccurs="1" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>InternalId da chave Empresa+Filial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Code" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Código</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="InternalId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>InternalId da Classe de Serviço</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Description" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Descrição</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="VendorCode" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Código do Fornecedor</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="VendorInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Fornecedor</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Blocked" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Bloqueado ( "1"-Sim / "2"-Não )
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ReturnContentType">
+		<xs:sequence>
+			<xs:element name="ListOfInternalId"  type="ListOfInternalIdType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Prefixo (Série)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="BusinessContent" type="BusinessContentType" substitutionGroup="AbstractBusinessContent"></xs:element>
+	<xs:element name="ReturnContent" type="ReturnContentType" substitutionGroup="AbstractReturnContent"></xs:element>
+</xs:schema>

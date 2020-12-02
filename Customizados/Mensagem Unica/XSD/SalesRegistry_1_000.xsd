@@ -1,0 +1,2102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"	elementFormDefault="qualified">
+	<xs:include schemaLocation="../totvsmsg.xsd"/>
+	<xs:include schemaLocation="../types/ListOfInternalId_1_000.xsd"/>
+	<xs:annotation>
+		<xs:appinfo>
+			<MessageDocumentation>
+				<Name>SalesRegistry</Name>
+				<Description>Registro de Venda Turismo</Description>
+				<ProductInformation product="PROTHEUS">
+					<Contact>SIGATUR</Contact>
+					<Adapter>TURI034.PRW</Adapter>
+					<Send>
+						<Insert>SIM</Insert>
+						<Update>SIM</Update>
+						<Delete>SIM</Delete>
+					</Send>
+					<Receive>
+						<Insert>SIM</Insert>
+						<Update>SIM</Update>
+						<Delete>SIM</Delete>
+					</Receive>
+				</ProductInformation>
+			</MessageDocumentation>
+		</xs:appinfo>
+	</xs:annotation>
+	<xs:complexType name="BusinessContentType">
+		<xs:sequence minOccurs="0" maxOccurs="1">
+			<xs:element name="CompanyId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Empresa</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BranchId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Filial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CompanyInternalId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>InternalId da chave Empresa+Filial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Code" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Código do Registro de Venda</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="InternalId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>InternalId do Registro de Venda</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="TradingProcess" maxOccurs="1"
+				minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Segmento de Negocio [1-CORPORATIVO/2-EVENTO/3-LAZER]
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value="3"></xs:enumeration>
+						<xs:enumeration value=" "></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="IssueDate" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Data de Emissao</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ProcessYear" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Ano</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CustomerInternalId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>InternalId do Cliente+Loja</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ServiceStationInternalId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Posto de Atendimento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Observation" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Observacoes (MEMO)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Description" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Descricao</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="InitialDate" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Data do Inicio</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FinalDate" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Data do Termino</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Destination" maxOccurs="1"
+				minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Destino da Viagem ou local do evento.
+						[1 - Nacional / 2 - Internacional]
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value=" "></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="AgentInternalId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>InternalId do Agente</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ExternalSalesRegistryId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Código Identificador Externo.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ListOfSaleItem"  type="ListOfSaleItemType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Séries de Internal ID's do Item de Venda</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfSaleItemType">
+		<xs:sequence>
+			<xs:element name="SaleItem"  type="SaleItemType" minOccurs="0" maxOccurs="unbounded" >
+				<xs:annotation>
+					<xs:documentation>Definições de Detalhe dos Itens</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="SaleItemType">
+		<xs:sequence>
+			<xs:element name="SaleItemCode" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código + Sequencia do Item de Venda</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="SaleItemInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalID do Código + Sequencia do Item de Venda</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="OperationType" maxOccurs="1"
+				minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Tipo de Operação 
+						[1-Emissao / 2-Reembolso/ 3-Reemissao/4-Venda de Servicos proprios]
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value="3"></xs:enumeration>
+						<xs:enumeration value="4"></xs:enumeration>
+						<xs:enumeration value=" "></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="DocumentType" maxOccurs="1"
+				minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Tipo de Documento [1-Voucher/ 2- Bilhete/
+						3-Localizador / 4-Doc. Adicional ]
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value="3"></xs:enumeration>
+						<xs:enumeration value="4"></xs:enumeration>
+						<xs:enumeration value=" "></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="OriginProcessNumber" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Numero do documento de venda de origem para referencia. 
+						So pode ser referenciado um documento cuja sequencia seja 01.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ProcessNumber" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Codigo do documento de registro da venda.
+						Tratamentos para Operacoes e Tipo Doc.
+						Emissao (Bilhete ou Localizador) \
+						Reemissao \ 
+						Reembolso (Bilhete ou Localizador)
+						O numero referencia o Bilhete ou Localizador informado pela Cia. Aerea.
+						Portanto deve ser editavel.
+						- Numero de Bilhete nao pode se repetir por fornecedor de reporte.
+						- Localizador pode se repetir no sistema Emissao (Voucher \ Doc. Adicional) \ Venda Serv. Prop. \ Reembolso (Voucher \ Doc. Adicional)
+						O numero referencia Voucher ou Doc. Adicional. É gerado automaticamente pelo sistema e nao podem se repetir.
+						Portanto, nao é possivel editar. No caso de Doc. Adicional a numeracao sera' a mesma do Voucher principal acrescentando apenas a Sequencia.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ConjugateAmount" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Quantidade de documentos conjugados</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="IssueDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data de Emissao</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BroadcastTypeInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Tipo de Emissão</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CustomerInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Cliente+Loja</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ItemInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Produto</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Destination" maxOccurs="1"
+				minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Destino (1=Nacional/2=Internacional)
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value=" "></xs:enumeration>
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="PaymentFormInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Forma de Pagamento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="TravelCurrencyInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Moeda do Cliente</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Exchange" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Taxa</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="RequestInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Solicitante</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="RequestDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data de Solicitação</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ServiceOrder" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Ordem de Serviço</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ServiceOrderItem" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Item da Ordem de Venda</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ListOfApportionment"  type="ListOfApportionmentType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Séries de Internal ID's (Itens/Detalhe)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ReservationDocument"  type="ReservationDocumentType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Séries de Internal ID's (Itens/Detalhe)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfApportionmentType">
+		<xs:sequence>
+			<xs:element name="Apportionment"  type="ApportionmentType" minOccurs="0" maxOccurs="unbounded" >
+				<xs:annotation>
+					<xs:documentation>Definições de Detalhe dos Itens</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ApportionmentType">
+		<xs:sequence>
+			<xs:element name="AdditionalEntitiesTypesInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Tipo de Entidade Adicional</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ReferenceStoreCode" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Cliente+loja, porem só será utilizado o valor da Loja</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="AdditionalEntitiesInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Item da Entidade Adicional</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Percentage" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Porcentagem</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ReservationDocumentType">
+		<xs:sequence>
+			<xs:element name="DocumentCode" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Numero do Documento (o mesmo do Item de Venda)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="DocumentInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Documento de Reserva</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ProductVendorInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Fornecedor e Loja do produto</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Destination" maxOccurs="1"
+				minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Destino da Viagem ou local do evento. [1 -
+						Nacional / 2 - Internacional]
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value=" "></xs:enumeration>
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="ServiceStationInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Posto de Atendimento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ServiceStationPCC" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código do Pcc</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ReportVendorInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Fornecedor+loja de Reporte</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="TravelCurrencyInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Moeda Financeiro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="EmissionAgentInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Agente de Emissão</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BookingAgentInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalID do Agente de Reserva</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="TourCode" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código do Tour</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ReservationObservations" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Observação (MEMO)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="SystemFrontInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalID do Sistema de Origem</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="GDSLocator" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation >Codigo do Localizador de GDS</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BookingConfirmationDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data de Confirmação de Reserva</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BookingConfirmationType" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Forma de confirmacao, meio pelo qual a confirmacao foi feita.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BookingConfirmationCode" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation >Identificador de confirmacao de Reserva</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Fares"  type="FarestType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Tarifas do Item de Venda</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ListOfQuotedFares"  type="ListOfQuotedFaresType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Lista de Tarifas cotadas</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ListOfRates"  type="ListOfRatesType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Lista de Taxas</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ListOfExtras"  type="ListOfExtrasType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Lista de Extras</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ListOfTaxes"  type="ListOfTaxesType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Lista de Impostos</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ListOfPassenger"  type="ListOfPassengerType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Lista de Passageiros</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Refund"  type="RefundType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Detalhes do Reembolso</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ListOfSegmentAir"  type="ListOfSegmentAirType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Lista do Segmento Aereo</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ListOfSegmentHotel"  type="ListOfSegmentHotelType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Lista do Segmento Hotel</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ListOfSegmentVehicle"  type="ListOfSegmentVehicleType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Lista do Segmento Veiculo</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ListOfSegmentRoad"  type="ListOfSegmentRoadType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Lista do Segmento Rodoviario</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ListOfSegmentTrain"  type="ListOfSegmentTrainType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Lista do Segmento Trem</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ListOfSegmentMaritime"  type="ListOfSegmentMaritimeType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Lista do Segmento Cruzeiro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ListOfSegmentPackage"  type="ListOfSegmentPackageType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Lista do Segmento Pacote</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ListOfSegmentTour"  type="ListOfSegmentTourType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Lista do Segmento tour</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ListOfSegmentInsurance"  type="ListOfSegmentInsuranceType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Lista do Segmento Seguro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ListOfSegmentVisa"  type="ListOfSegmentVisaType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Lista do Segmento Visto</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ListOfOtherSegment"  type="ListOfOtherSegmentType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Lista de Outros Segmento </xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="FarestType">
+		<xs:sequence>
+			<xs:element name="TravelCurrencyInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Moeda do Fornecedor </xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BaseFare" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Base Tarifária</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FareType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Tipo de Tarifa (1- Net/ 2- Comissionada)
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value=" "></xs:enumeration>
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="BaseFareValue" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Valor da tarifa com acordo na moeda original</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Exchange" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Taxa</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="MinorFareValue" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Menor Tarifa</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="MaxFareValue" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Maior Tarifa</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FullFareValue" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Tarifa Cheia</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="NoDealFareValue" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Valor da tarifa de venda sem acordo 
+						Tarifa Publicada não pode ser menor que Tarifa nacional
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="OpportunityFareValue" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Valora da tarifa promocional (momentânea)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="EarlyCheckinFareValue" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Valor da tarifa para check-in antecipado</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="LateCheckoutFareValue" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Valor da tarifa para check-out adicional</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FoodServiceFareValue" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Valor do plano alimentar</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfQuotedFaresType">
+		<xs:sequence>
+			<xs:element name="QuotedFares" type="QuotedFaresType" maxOccurs="unbounded" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Definição de Cada linha de Tarifas cotadass</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfRatesType">
+		<xs:sequence>
+			<xs:element name="Rates" type="RatesType" maxOccurs="unbounded" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Definiçao de cada linha de taxas</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfExtrasType">
+		<xs:sequence>
+			<xs:element name="Extras" type="ExtrasType" maxOccurs="unbounded" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Definiçao de cada linha de extras</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfTaxesType">
+		<xs:sequence>
+			<xs:element name="Taxes" type="TaxesType" maxOccurs="unbounded" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Definiçao de cada linha de impostos</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfPassengerType">
+		<xs:sequence>
+			<xs:element name="Passenger" type="PassengerType" maxOccurs="unbounded" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Definiçao de cada linha de passageiro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="RefundType">
+		<xs:sequence>
+			<xs:element name="DocumentRequest" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Documento Solicitação.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="RefundType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Tipo de Reembolso [1- Voluntário; 2- Involuntário]
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value=" "></xs:enumeration>
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="RefundReasonInternalId" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Motivo Reembolso</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FinancialDestiny" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Destino Financeiro. [1-Cliente ;2-Agencia]</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value=""></xs:enumeration>
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="PredictionOfReceipt" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Previsão de Recebimento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="DateOfCreditAgency" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data de Crédito na Agencia</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="InternalNote" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Observações internas (MEMO)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BaseFare" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Base Tarifaria</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FareType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Tipo de Tarifa (1- Net/ 2- Comissionada)
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value=" "></xs:enumeration>
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="TravelCurrencyInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da moeda do fornecedor</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Exchange" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Taxa de Câmbio</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FarePaid" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Tarifa Paga</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CurrencyInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Moeda Financeiro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="NationalFarePaid" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Tarifa paga Nacional</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FaresUsed" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Tarifa utilizada</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FaresRefunded" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Tarifa Reembolsada</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="RatesPaid" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Taxa Paga</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="RatesRefunded" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Taxa Reembolsada</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ExtrasPaid" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Extras Pagos</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ExtrasRefunded" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Extras Reembolsados</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CalculationNote" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Observação de Calculo (MEMO)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfSegmentAirType">
+		<xs:sequence>
+			<xs:element name="SegmentAir" type="SegmentAirType" maxOccurs="unbounded" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Definiçao de cada linha de segmento aereo</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfSegmentHotelType">
+		<xs:sequence>
+			<xs:element name="SegmentHotel" type="SegmentHotelType" maxOccurs="unbounded" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Definiçao de cada linha de segmento hotel</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfSegmentVehicleType">
+		<xs:sequence>
+			<xs:element name="SegmentVehicle" type="SegmentVehicleType" maxOccurs="unbounded" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Definiçao de cada linha de segmento veiculo</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfSegmentRoadType">
+		<xs:sequence>
+			<xs:element name="SegmentRoad" type="SegmentRoadType" maxOccurs="unbounded" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Definiçao de cada linha de segmento rodoviario</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfSegmentTrainType">
+		<xs:sequence>
+			<xs:element name="SegmentTrain" type="SegmentTrainType" maxOccurs="unbounded" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Definiçao de cada linha de segmento trem</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfSegmentMaritimeType">
+		<xs:sequence>
+			<xs:element name="SegmentMaritime" type="SegmentMaritimeType" maxOccurs="unbounded" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Definiçao de cada linha de segmento maritimo</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfSegmentPackageType">
+		<xs:sequence>
+			<xs:element name="SegmentPackage" type="SegmentPackageType" maxOccurs="unbounded" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Definiçao de cada linha de segmento pacote</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfSegmentTourType">
+		<xs:sequence>
+			<xs:element name="SegmentTour" type="SegmentTourType" maxOccurs="unbounded" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Definiçao de cada linha de segmento tuor</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfSegmentInsuranceType">
+		<xs:sequence>
+			<xs:element name="SegmentInsurance" type="SegmentInsuranceType" maxOccurs="unbounded" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Definiçao de cada linha de segmento seguro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfSegmentVisaType">
+         <xs:sequence>
+			<xs:element name="SegmentVisa" type="SegmentVisaType" maxOccurs="unbounded" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Definiçao de cada linha de segmento visto</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfOtherSegmentType">
+		<xs:sequence>
+			<xs:element name="OtherSegment" type="OtherSegmentType" maxOccurs="unbounded" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Definiçao de cada linha de outros segmentos</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="QuotedFaresType">
+		<xs:sequence>
+			<xs:element name="QuotedFare" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Numero sequencial da Tarifa cotada</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="QuotedFareInternalID" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Tarifa Cotada</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="AirlineShortName" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Codigo da compania Aerea</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="AirportOriginInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Aeroporto de Origem</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="AirportDestinyInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Aeroporto de Destino</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="DepartureTime" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Hora de Saida</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ConnectionsAmount" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Quantidade de Conexões</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ScalesAmount" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Quantidade de Escalas</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="TravelCurrencyInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Moeda</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FareValue" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Tarifa</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="TaxValue" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Taxa</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="RatesType">
+		<xs:sequence>
+			<xs:element name="RatesCode" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Sequencia da Taxa</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="RatesInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da sequencia da Taxa</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="IssueDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data de Emissão</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="TravelRatesInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Taxa de Turismo</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Value" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Valor</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="TravelCurrencyInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Moeda</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Exchange" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Taxa de Cambio</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Observations" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Observações (MEMO)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ExtrasType">
+		<xs:sequence>
+			<xs:element name="ExtrasCode" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código Sequencial do Extra</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ExtrasInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalID da sequencia do Extra</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="IssueDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data e emissão</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Description" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Descrição</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="TravelCurrencyInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalID da Moeda</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Exchange" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Taxa de Cambio</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="UnitaryValue" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Valor Unitario</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Quantity" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Quantidade</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="AmountValue" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Valor Total</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Observations" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Observações (MEMO)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="TaxesType">
+		<xs:sequence>
+			<xs:element name="TaxInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Código sequencial do Imposto</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Tax" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Codigo do Imposto cadastrado no sistema</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Description" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Descrição</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CurrencyInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Moeda</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="TaxCalculationBase" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Base de Calculo</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="TaxRate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Aliquota</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="AppliedTaxValue" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Valor do Imposto</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="PassengerType">
+		<xs:sequence>
+			<xs:element name="Passenger" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código sequencial do Passageiro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="PassengerInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Passageiro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ContactInternalID" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Contato</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="PAXType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Tipo do Passageiro: 1- Adulto (ADT) 2- Crianca
+						(CHD) 3- Infantil / Bebe (INF) 4- Junior (JUN)
+						5- Militar (MIL) 6- Senior (SEN)
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value=" "></xs:enumeration>
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value="3"></xs:enumeration>
+						<xs:enumeration value="4"></xs:enumeration>
+						<xs:enumeration value="5"></xs:enumeration>
+						<xs:enumeration value="6"></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="Treatment" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Tratamento passageiro:[1- MR 2- MRS 3- MISS 4-MSTR]
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value=""></xs:enumeration>
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value="3"></xs:enumeration>
+						<xs:enumeration value="4"></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="FirstName" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Primeiro nome</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="LastName" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Ultimo Nome</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FullName" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Nome completo</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Registration" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Matricula do Passageiro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Gender" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Sexo</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Nationality" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Nacionalidade</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BirthDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data de Nascimento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="PAXEmail" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Email</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="VIP" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Vip? [1- Sim/ 2- Não]
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value=" "></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="Outsourced" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Informa se é um terceiro trabalhando para o cliente</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value=" "></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="ListOfAdditionalEntities"  type="ListOfAdditionalEntitiesType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Séries de Internal ID's (Itens/Detalhe)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfAdditionalEntitiesType">
+		<xs:sequence>
+			<xs:element name="AdditionalEntities" type="AdditionalEntitiesType" maxOccurs="unbounded" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Definição da Linha da Entidade Adicional</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="AdditionalEntitiesType">
+		<xs:sequence>
+			<xs:element name="AdditionalEntitiesTypesInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Tipo de Entidade</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ReferenceStoreCode" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Cliente+Loja referente ao Tipo de entidade</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="AdditionalEntitiesInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Item do Tipo de Entidade</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="SegmentAirType">
+		<xs:sequence>
+			<xs:element name="SegmentInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Sequencial do segmento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="IntegrationID" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Identificador do segmento no arquivo de integracao Nao pode se repetir</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Passenger" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código sequencial cadastrado na seção de Passageiro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Locator" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation >Localizador da Compania Aerea</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ProductVendorInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalID do Fornecedor+loja</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="GDS" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>GDS (Global Distribution System) utilizado para a emissao do bilhete</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Aircraft" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Aeronave</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="AirportOriginInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Aeroporto de origem</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="AirportDestinyInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Aeroporto de Destino</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ServiceClassInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da classe de serviço</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FlightNumber" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Numero do Voo</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="DepartureDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data de Saida</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="DepartureTime" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Hora de Saida</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ArrivalDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data de Chegada</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ArrivalTime" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Hora de chegada</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="StopType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Tipo de Parada [1-Conexao / 2-Escala]
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value=""></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="FlightTime" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Tempo de Voo</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="StopQuantity" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Quantidade de Paradas</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Observation" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Observação (MEMO)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="SegmentHotelType">
+		<xs:sequence>
+			<xs:element name="SegmentInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Sequencial do segmento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="IntegrationID" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Identificador do segmento no arquivo de integracao Nao pode se repetir</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Passenger" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código sequencial cadastrado na seção de Passageiro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="TravelCity" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Nome da Cidade</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CheckinDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data do Check-in</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CheckoutDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data do Check-out</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CheckinTime" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>hora do Check-in</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CheckoutTime" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Hora do Check-out</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="HotelProductType" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Tipo do Produto do segmento Hotel. Pode ser uma das opcoes:
+						[1-Apartamento;2-Pacote;3-Sala de Convencao;4-Sala de Reuniao;5-Restaurante ou 6-Outros.]
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="NumberOfProducts" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Quantidade de Produtos</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ApartamentTypeInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código do apartamento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="RoomCategory" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Categoria do apartamento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CancellationDeadline" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Prazo para cancelamento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="NoShowWarranty" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Descricao da garantia de no show</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FoodServiceInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation >Define o plano alimentar contratado.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="SystemBrokerInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Broker associado a reserva. Ex.: Trend, HotelBeds, etc.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Observation" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Observações (Memo)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="SegmentVehicleType">
+		<xs:sequence>
+			<xs:element name="SegmentInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Sequencial do segmento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="IntegrationID" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Identificador do segmento no arquivo de integracao Nao pode se repetir</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Passenger" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código sequencial cadastrado na seção de Passageiro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="PickUpCityInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Cidade de Retirada</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="PickUpLocation" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Local da Retirada</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ReturnCityInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Cidade de Retirada</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ReturnLocation" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Local da Cidade de Retirada</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="NumberOfVehicle" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Quantidade de Veiculos</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="VehicleCategoryInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Categoria do Veiculo</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="VehicleTypeInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Tipo de Veiculo</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="DirectionTypeInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Tipo Direção de Veiculo</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FuelTypeInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId Tipo de Combustivel</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="PickUpDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Dia da Retirada</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="PickUpTime" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Hora da Retirada</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ReturnDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data da Devolução</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ReturnTime" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Hora do Retorno</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="SystemBrokerInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Internal Id do Systema de Broker</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Daily" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Quantidade de Diarias</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CancellationDeadline" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Prazo para cancelamento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="NoShowWarranty" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation >Descricao da garantia de no show</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Observation" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Observação (MEMO)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="SegmentRoadType">
+		<xs:sequence>
+			<xs:element name="SegmentInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Sequencial do segmento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="IntegrationID" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Identificador do segmento no arquivo de integracao Nao pode se repetir</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Passenger" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código sequencial cadastrado na seção de Passageiro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="VehicleDescription" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation >Descricao do Veiculo Contratado</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="RoadLineInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Linha</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="RoadLineStretcheInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do trecho</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BusCategory" maxOccurs="1"
+				minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Categoria do Onibus. As opcoes sao:
+						[1-Leito;2-Convencional;3-Executivo;4-Semi Leito
+						ou 5-Outros]
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value="3"></xs:enumeration>
+						<xs:enumeration value="4"></xs:enumeration>
+						<xs:enumeration value="5"></xs:enumeration>
+						<xs:enumeration value=" "></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="DepartureCityInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Cidade de Embarque</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ArrivalCityInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Cidade de Desembarque</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ArrivalLocation" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Local de Desembarque</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="DepartureDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data de Saida</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="DepartureTime" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Hora de Saida</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ArrivalDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data de Chegada</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ArrivalTime" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Hora de Chegada</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Observation" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Observação (MEMO)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="SegmentTrainType">
+		<xs:sequence>
+			<xs:element name="SegmentInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Sequencial do segmento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="IntegrationID" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Identificador do segmento no arquivo de integracao Nao pode se repetir</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Passenger" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código sequencial cadastrado na seção de Passageiro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Description" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation >Descricao do Produto Ferroviario</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Category" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation >Informacao da Categoria do Trem</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Number" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation >Numero do Trem</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="StopQuantity" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Quantidade de paradas</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="DepartureCityInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da cidade de saida</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ArrivalCityInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Cidade de Chegada</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="DepartureDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data de Saida</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="DepartureTime" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Hora de Saida</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ArrivalDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data de Chegada</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ArrivalTime" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Hhora de Chegada</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Observation" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Observações (Memo)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="SegmentMaritimeType">
+		<xs:sequence>
+			<xs:element name="SegmentInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Sequencial do segmento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="IntegrationID" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Identificador do segmento no arquivo de integracao Nao pode se repetir</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Passenger" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código sequencial cadastrado na seção de Passageiro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ShipInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Navio</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CruiseDescription" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Descrição do Cruzeiro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="MainCityInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Cidade principal onde o pacote ocorre.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="DepartureCityInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalID Cidade principal onde o passageiro embarca</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="InitialDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data Inicial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FinalDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data Final</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="InitialTime" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Hora Inicial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FinalTime" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Hora Final</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CabinTypeInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Tipo da Cabine</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CabinNumber" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Numero da Cabine</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CancellationDeadline" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Prazo para cancelamento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Observation" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Observações (memo)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="SegmentPackageType">
+		<xs:sequence>
+			<xs:element name="SegmentInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Sequencial do segmento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="IntegrationID" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Identificador do segmento no arquivo de integracao Nao pode se repetir</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Passenger" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código sequencial cadastrado na seção de Passageiro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="PackageDescription" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Descrição do pacote (Memo)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="MainCityInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da cidade Principal</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="DepartureCityInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da cidade principal de embarque</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="InitialDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data inicial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="InitialTime" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Hora inicial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FinalDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data Final</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FinalTime" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Hora final</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="NumberOfPackage" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Numero de Pacotes</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CancellationDeadline" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Prazo para cancelamento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Observation" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Observação (MEMO)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="SegmentTourType">
+		<xs:sequence>
+			<xs:element name="SegmentInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Sequencial do segmento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="IntegrationID" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Identificador do segmento no arquivo de integracao Nao pode se repetir</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Passenger" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código sequencial cadastrado na seção de Passageiro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="TourName" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Nome do Tour</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="TourDescription" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Descrição do Tour (Memo)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="MainCityInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da cidade Principal</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="DepartureCityInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Cidade de Embarque</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="DepartureLocation" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Local de Embarque</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ArrivalLocation" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Local de Chegada</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="InitialDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data inicial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FinalDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data Finals</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="InitialTime" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Hora Inicial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FinalTime" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Hora Final</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CancellationDeadline" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Prazo para cancelamento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Observation" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Observação (MEMO)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="SegmentInsuranceType">
+		<xs:sequence>
+			<xs:element name="SegmentInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Sequencial do segmento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="IntegrationID" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Identificador do segmento no arquivo de integracao Nao pode se repetir</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Passenger" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código sequencial cadastrado na seção de Passageiro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="InsuranceInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Plano de Seguro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BeneficiaryName" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Nome do Beneficiario</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BeneficiaryAddress" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Endereço do Beneficiario</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BeneficiaryPhone" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Telefone do Beneficiario</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="PolicyNumber" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Numero da Apolice</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="InitialDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data Inicial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FinalDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data final</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Observation" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Observações (Memo)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="SegmentVisaType">
+		<xs:sequence>
+			<xs:element name="SegmentInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Sequencial do segmento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="IntegrationID" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Identificador do segmento no arquivo de integracao Nao pode se repetir</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Passenger" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código sequencial cadastrado na seção de Passageiro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CountryName" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Pais</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="VisaTypeInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Visto</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Observation" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Observações (Memo)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="OtherSegmentType">
+		<xs:sequence>
+			<xs:element name="SegmentInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Sequencial do segmento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="IntegrationID" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Identificador do segmento no arquivo de integracao Nao pode se repetir</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Passenger" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código sequencial cadastrado na seção de Passageiro</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ServiceDescription" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Descrição (MEMO)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="DepartureCityInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da cidade De Embarque</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ArrivalCityInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Cidade de Chegada</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="InitialDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data Inicial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FinalDate" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Data Final</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Observation" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Observações (MEMO)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ReturnContentType">
+		<xs:sequence>
+			<xs:element name="ListOfInternalId"  type="ListOfInternalIdType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Séries de Internal ID's (Itens/Detalhe)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="BusinessContent" type="BusinessContentType" substitutionGroup="AbstractBusinessContent"/>
+	<xs:element name="ReturnContent" type="ReturnContentType" substitutionGroup="AbstractReturnContent"/>
+</xs:schema>

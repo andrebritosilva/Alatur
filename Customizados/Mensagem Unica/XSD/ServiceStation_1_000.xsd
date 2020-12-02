@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"	elementFormDefault="qualified">
+  <xs:include schemaLocation="../totvsmsg.xsd"></xs:include>
+  <xs:include schemaLocation="../types/ListOfInternalId_1_000.xsd"></xs:include>
+  <xs:annotation>
+		<xs:appinfo>
+			<MessageDocumentation>
+				<Name>ServiceStation</Name>
+				<Description>Posto de Atendimento</Description>
+				<ProductInformation product="PROTHEUS">
+					<Contact>SIGATUR</Contact>
+					<Adapter>TURI010.PRW</Adapter>
+					<Send>
+						<Insert>SIM</Insert>
+						<Update>SIM</Update>
+						<Delete>SIM</Delete>
+					</Send>
+					<Receive>
+						<Insert>SIM</Insert>
+						<Update>SIM</Update>
+						<Delete>SIM</Delete>
+					</Receive>
+				</ProductInformation>
+			</MessageDocumentation>
+		</xs:appinfo>
+	</xs:annotation>
+  <xs:complexType name="BusinessContentType">
+		<xs:sequence minOccurs="0" maxOccurs="1">
+			<xs:element name="CompanyId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Empresa</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BranchId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Filial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CompanyInternalId" maxOccurs="1" minOccurs="1" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>InternalId da chave Empresa+Filial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Code" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Código</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="InternalId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>InternalId do Posto de Atendimento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Description" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Posto de Atendimento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Address" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Endereço</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Complement" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Complemento</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="UF" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>UF</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CityCode" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Cód. Cidade</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CityInternalId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>InternalId Cidade</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ZipCode" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>CEP</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="DDI" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>DDI</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="DDD" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>DDD</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Phone" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Phone</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="FAX" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>FAX</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Email" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Email</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="WebSite" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Site</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="IATA" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Numero da IATA</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ShortIATA" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Abreviatura IATA</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="PCC" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Numero do PCC</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Blocked" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Bloqueado ( "1"-Sim / "2"-Não )</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ReturnContentType">
+		<xs:sequence>
+			<xs:element name="ListOfInternalId"  type="ListOfInternalIdType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Prefixo (Série)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="BusinessContent" type="BusinessContentType" substitutionGroup="AbstractBusinessContent"></xs:element>
+	<xs:element name="ReturnContent" type="ReturnContentType" substitutionGroup="AbstractReturnContent"></xs:element>
+</xs:schema>

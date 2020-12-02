@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"	elementFormDefault="qualified">
+  <xs:include schemaLocation="../totvsmsg.xsd"></xs:include>
+  <xs:include schemaLocation="../types/ListOfInternalId_1_000.xsd"></xs:include>
+  <xs:annotation>
+		<xs:appinfo>
+			<MessageDocumentation>
+				<Name>ContactList</Name>
+				<Description>Cadastro de Moedas</Description>
+				<ProductInformation product="PROTHEUS">
+					<Contact>SIGATUR</Contact>
+					<Adapter>CRMA060</Adapter>
+					<Send>
+						<Insert>SIM</Insert>
+						<Update>SIM</Update>
+						<Delete>SIM</Delete>
+					</Send>
+					<Receive>
+						<Insert>SIM</Insert>
+						<Update>SIM</Update>
+						<Delete>SIM</Delete>
+					</Receive>
+				</ProductInformation>
+			</MessageDocumentation>
+		</xs:appinfo>
+	</xs:annotation>
+  <xs:complexType name="BusinessContentType">
+		<xs:sequence minOccurs="0" maxOccurs="1">
+			<xs:element name="CompanyId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Empresa</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BranchId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Filial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CompanyInternalId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>InternalId da chave Empresa+Filial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CustomerCode" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Código da Entidade</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CustomerInternalId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>InternalId da Entidade</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Entity" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Tipo da Entidade</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ListOfContacts" maxOccurs="1" minOccurs="0" type="ListOfContactsType">
+				<xs:annotation>
+					<xs:documentation>Séries de Internal ID's (Itens/Detalhe)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfContactsType">
+		<xs:sequence>
+			<xs:element name="Contact" type="ContactType" minOccurs="0" maxOccurs="unbounded" >
+				<xs:annotation>
+					<xs:documentation>Definicoes de Detalhe dos Itens</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ContactType">
+		<xs:sequence>
+			<xs:element name="Contact" type="xs:string" minOccurs="0" maxOccurs="1" >
+				<xs:annotation>
+					<xs:documentation>Código do Contato</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ContactInternalId" type="xs:string" minOccurs="0" maxOccurs="1" >
+				<xs:annotation>
+					<xs:documentation>InternalId do Contato</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ReturnContentType">
+		<xs:sequence>
+			<xs:element name="ListOfInternalId"  type="ListOfInternalIdType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Prefixo (Série)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="BusinessContent" type="BusinessContentType" substitutionGroup="AbstractBusinessContent"></xs:element>
+	<xs:element name="ReturnContent" type="ReturnContentType" substitutionGroup="AbstractReturnContent"></xs:element>
+</xs:schema>

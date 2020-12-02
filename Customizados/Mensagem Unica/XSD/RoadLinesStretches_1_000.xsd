@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	elementFormDefault="qualified">
+	<xs:include schemaLocation="../totvsmsg.xsd" />
+	<xs:include schemaLocation="../types/ListOfInternalId_1_000.xsd" />
+	<xs:annotation>
+		<xs:appinfo>
+			<MessageDocumentation>
+				<Name>RoadLinesStretches</Name>
+				<Description>Cadastro de Linhas e Trechos</Description>
+				<ProductInformation product="PROTHEUS">
+					<Contact>SIGATUR</Contact>
+					<Adapter>TURI052.PRW</Adapter>
+					<Send>
+						<Insert>SIM</Insert>
+						<Update>SIM</Update>
+						<Delete>SIM</Delete>
+					</Send>
+					<Receive>
+						<Insert>SIM</Insert>
+						<Update>SIM</Update>
+						<Delete>SIM</Delete>
+					</Receive>
+				</ProductInformation>
+			</MessageDocumentation>
+		</xs:appinfo>
+	</xs:annotation>
+	<xs:complexType name="BusinessContentType">
+		<xs:sequence minOccurs="0" maxOccurs="1">
+			<xs:element name="CompanyId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Empresa</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BranchId" maxOccurs="1" minOccurs="0"
+				type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Filial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CompanyInternalId" maxOccurs="1" minOccurs="1" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>InternalId da chave Empresa+Filial
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Code" maxOccurs="1" minOccurs="0"	type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Código</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="InternalId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>InternalId</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Initials" maxOccurs="1" minOccurs="0"	type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Sigla</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Description" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Descrição</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="VendorCode" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Fornecedor+Loja </xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="VendorInternalId" maxOccurs="1"	minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>InternalId Fornecedor+Loja</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="DepartureCity" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Cód. Cidade Embarque</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="DepartureCityInternalId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>InternalId Cidade Embarque</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ArrivalCity" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Cód. Cidade Desembarque</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ArrivalCityInternalId" maxOccurs="1"	minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>InternalId Cidade Desembarque</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Distance" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Distância</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Minutes" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Tempo</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Blocked" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Bloquado? ( "1"-Sim / "2"-Não )
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value=""></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="ListOfStretches" type="ListOfStretchesType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Séries de Internal ID's (Itens/Detalhe)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfStretchesType">
+		<xs:sequence>
+			<xs:element name="Stretche" type="StretchesType" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>Definições de Detalhe dos Itens</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="StretchesType">
+		<xs:sequence>
+			<xs:element name="Code" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código do Detalhe</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CodeInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId do Detalhe</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="StretchesCity" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Cód. Cidade </xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="StretchesCityInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalId da Cidade</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="StretchesDistance" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Distância</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ReturnContentType">
+		<xs:sequence>
+			<xs:element name="Name" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>Nome da InternalId</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Origin" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>InternalId da origem</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Destination" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>InternalId do destino</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ListOfInternalId" type="ListOfInternalIdType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Séries de Internal ID's (Itens/Detalhe)
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="BusinessContent" type="BusinessContentType" substitutionGroup="AbstractBusinessContent" />
+	<xs:element name="ReturnContent" type="ReturnContentType" substitutionGroup="AbstractReturnContent" />
+</xs:schema>

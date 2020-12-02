@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:include schemaLocation="../totvsmsg.xsd"/>
+	<xsd:include schemaLocation="../commons_1_000.xsd"></xsd:include>
+	<xsd:include schemaLocation="../types/ListOfInternalId_1_000.xsd"/>
+
+	<xsd:annotation>
+    	<xsd:documentation>
+			<Name>AdditionalEntities</Name>
+			<Description>Cadastro de Entidades Adicionais</Description>
+			<ProductInformation product="PROTHEUS">
+				<Contact>SIGATUR</Contact>
+				<Adapter>TURI006.PRW</Adapter>
+				<Send>
+					<Insert>SIM</Insert>
+					<Update>SIM</Update>
+					<Delete>SIM</Delete>
+				</Send>
+				<Receive>
+					<Insert>SIM</Insert>
+					<Update>SIM</Update>
+					<Delete>SIM</Delete>
+				</Receive>
+			</ProductInformation>
+    	</xsd:documentation>
+	</xsd:annotation>
+
+	<xsd:complexType name="BusinessContentType">
+		<xsd:sequence>
+			<xsd:element name="CompanyId" type="xsd:string" maxOccurs="1" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Código da Empresa</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="BranchId" maxOccurs="1" minOccurs="0" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation>Código da Filial</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="CompanyInternalId" maxOccurs="1" minOccurs="1" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation>InternalId da Empresa + Filial</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="CustomerCode" maxOccurs="1" minOccurs="0" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation>Código do Cliente + Loja</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="CustomerInternalId" maxOccurs="1" minOccurs="0" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation>InternalId do Cliente</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="EntitieTypeCode" maxOccurs="1" minOccurs="0" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation>Tipo de Entidade</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="EntitieTypeInternalId" maxOccurs="1" minOccurs="0" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation>InternalId do Tipo da Entidade</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="InternalId" type="xsd:string" maxOccurs="1" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>InternalID para funcionalidade DE/PARA do cabeçalho</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Share" maxOccurs="1" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Compartilha entre Lojas do Cliente? ( “1”-Sim / ”2”-Não )</xsd:documentation>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:enumeration value="1"></xsd:enumeration>
+						<xsd:enumeration value="2"></xsd:enumeration>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+            <xsd:element name="Required" maxOccurs="1" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Requerido? ( "1"-Sim / "2"-Não )</xsd:documentation>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:enumeration value="1"></xsd:enumeration>
+						<xsd:enumeration value="2"></xsd:enumeration>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+            <xsd:element name="Mask" maxOccurs="1" minOccurs="0" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation>Máscara para apresentação</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+            <xsd:element name="Validate" maxOccurs="1" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Validação? ( "1"-Sim / "2"-Não )</xsd:documentation>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:enumeration value="1"></xsd:enumeration>
+						<xsd:enumeration value="2"></xsd:enumeration>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+            <xsd:element name="List" maxOccurs="1" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Lista? ( "1"-Sim / "2"-Não )</xsd:documentation>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:enumeration value="1"></xsd:enumeration>
+						<xsd:enumeration value="2"></xsd:enumeration>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="Corporate" maxOccurs="1" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Corporativo? ( "1"-Sim / "2"-Não )</xsd:documentation>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:enumeration value="1"></xsd:enumeration>
+						<xsd:enumeration value="2"></xsd:enumeration>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="Events" maxOccurs="1" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Eventos? ( "1"-Sim / "2"-Não )</xsd:documentation>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:enumeration value="1"></xsd:enumeration>
+						<xsd:enumeration value="2"></xsd:enumeration>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="Recreation" maxOccurs="1" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Lazer? ( "1"-Sim / "2"-Não )</xsd:documentation>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:enumeration value="1"></xsd:enumeration>
+						<xsd:enumeration value="2"></xsd:enumeration>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="Blocked" maxOccurs="1" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Registro Bloqueado? ( 1-Sim / 2-Não )</xsd:documentation>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:enumeration value="1"></xsd:enumeration>
+						<xsd:enumeration value="2"></xsd:enumeration>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="ListOfAdditionalEntities" type="ListOfAdditionalEntitiesType" maxOccurs="1" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Séries de Internal ID's (Itens/Detalhe)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="ListOfAdditionalEntitiesType">
+		<xsd:sequence>
+			<xsd:element name="AdditionalEntities" type="AdditionalEntitiesType" minOccurs="1" maxOccurs="unbounded" >
+				<xsd:annotation>
+					<xsd:documentation>Definições de Detalhe dos Itens</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="AdditionalEntitiesType">
+		<xsd:sequence>
+			<xsd:element name="ItemCode" type="xsd:string" maxOccurs="1" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Código do Detalhe</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="CodeInternalId" type="xsd:string" maxOccurs="1" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>InternalID do Detalhe</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Description" type="xsd:string" maxOccurs="1" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Descrição do Detalhe</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="BusinessContent" type="BusinessContentType" substitutionGroup="AbstractBusinessContent"/>
+
+	<xsd:complexType name="ReturnContentType">
+		<xsd:sequence>
+			<xsd:element name="ListOfInternalId" type="ListOfInternalIdType" minOccurs="0"></xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="ReturnContent" type="ReturnContentType" substitutionGroup="AbstractReturnContent"/>
+</xsd:schema>

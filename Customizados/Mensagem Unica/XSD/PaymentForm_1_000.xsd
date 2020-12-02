@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"	elementFormDefault="qualified">
+	<xs:include schemaLocation="../totvsmsg.xsd"/>
+	<xs:include schemaLocation="../types/ListOfInternalId_1_000.xsd"/>
+	<xs:annotation>
+		<xs:appinfo>
+			<MessageDocumentation>
+				<Name>PaymentForm</Name>
+				<Description>Forma de Pagamento</Description>
+				<ProductInformation product="PROTHEUS">
+					<Contact>SIGATUR</Contact>
+					<Adapter>TURI011.PRW</Adapter>
+					<Send>
+						<Insert>SIM</Insert>
+						<Update>SIM</Update>
+						<Delete>SIM</Delete>
+					</Send>
+					<Receive>
+						<Insert>SIM</Insert>
+						<Update>SIM</Update>
+						<Delete>SIM</Delete>
+					</Receive>
+				</ProductInformation>
+			</MessageDocumentation>
+		</xs:appinfo>
+	</xs:annotation>
+	<xs:complexType name="BusinessContentType">
+		<xs:sequence minOccurs="0" maxOccurs="1">
+			<xs:element name="CompanyId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation><xs:documentation>Empresa</xs:documentation></xs:annotation>
+			</xs:element>
+			<xs:element name="BranchId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation><xs:documentation>Filial</xs:documentation></xs:annotation>
+			</xs:element>
+			<xs:element name="CompanyInternalId" maxOccurs="1" minOccurs="1" type="xs:string">
+				<xs:annotation><xs:documentation>InternalId da chave Empresa+Filial</xs:documentation></xs:annotation>
+			</xs:element>
+			<xs:element name="Code" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation><xs:documentation>Código</xs:documentation></xs:annotation>
+			</xs:element>
+			<xs:element name="InternalId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation><xs:documentation>InternalId</xs:documentation></xs:annotation>
+			</xs:element>
+			<xs:element name="Description" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation><xs:documentation>Descrição</xs:documentation></xs:annotation>
+			</xs:element>
+			<xs:element name="Corporate" maxOccurs="1" minOccurs="0">
+				<xs:annotation><xs:documentation>Corporativo? ( "1"-Sim / "2"-Não )</xs:documentation></xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="Events" maxOccurs="1" minOccurs="0">
+				<xs:annotation><xs:documentation>Evento? ( "1"-Sim / "2"-Não )</xs:documentation></xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="Recreation" maxOccurs="1" minOccurs="0">
+				<xs:annotation><xs:documentation>Lazer? ( "1"-Sim / "2"-Não )</xs:documentation></xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="Blocked" maxOccurs="1" minOccurs="0">
+				<xs:annotation><xs:documentation>Bloqueado? ( "1"-Sim / "2"-Não )</xs:documentation></xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="ListOfItens" type="ListOfItensType" maxOccurs="1" minOccurs="0">
+				<xs:annotation><xs:documentation>Séries de Internal ID's (Itens/Detalhe)</xs:documentation></xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ListOfItensType">
+		<xs:sequence>
+			<xs:element name="Itens"  type="ItensType" minOccurs="1" maxOccurs="unbounded" >
+				<xs:annotation><xs:documentation>Definições de Detalhe dos Itens</xs:documentation></xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ItensType">
+		<xs:sequence>
+			<xs:element name="Code" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation><xs:documentation>Código do Item</xs:documentation></xs:annotation>
+			</xs:element>
+			<xs:element name="CodeInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation><xs:documentation>InternalID do Item</xs:documentation></xs:annotation>
+			</xs:element>
+			<xs:element name="Type" maxOccurs="1" minOccurs="0">
+				<xs:annotation><xs:documentation>Tipo de FOP</xs:documentation></xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value="3"></xs:enumeration>
+						<xs:enumeration value="4"></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="Percent" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation><xs:documentation>Percentual do FOP</xs:documentation></xs:annotation>
+			</xs:element>
+			<xs:element name="PaymentOrigin" minOccurs="0">
+                <xs:annotation><xs:documentation>1 - Fornecedor / 2 - Fixa / 3 - Venda / 4 - Cartão Próprio</xs:documentation></xs:annotation>
+                <xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value="3"></xs:enumeration>
+						<xs:enumeration value="4"></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="PaymentCondition" type="xs:string" minOccurs="0"></xs:element>
+			<xs:element name="PaymentNature" type="xs:string" minOccurs="0"></xs:element>
+			<xs:element name="ReceiptOrigin" minOccurs="0">
+                <xs:annotation><xs:documentation>1 - Cliente / 2 - Fixa / 3 - Venda / 4 - POS</xs:documentation></xs:annotation>
+                <xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value="3"></xs:enumeration>
+						<xs:enumeration value="4"></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="ReceiptCondition" type="xs:string" minOccurs="0"></xs:element>
+			<xs:element name="ReceiptNature" type="xs:string" minOccurs="0"></xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ReturnContentType">
+		<xs:sequence>
+			<xs:element name="ListOfInternalId"  type="ListOfInternalIdType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Séries de Internal ID's (Itens/Detalhe)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="BusinessContent" type="BusinessContentType" substitutionGroup="AbstractBusinessContent"/>
+	<xs:element name="ReturnContent" type="ReturnContentType" substitutionGroup="AbstractReturnContent"/>
+</xs:schema>

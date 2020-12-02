@@ -1,0 +1,4 @@
+TPFEND  : ftpdtc.totvs.com.br 
+TPFPOR  : 21 
+TPFUSER : qbsnct_p12_r6_rps 
+TPFSENH : tC5PdCSICh 

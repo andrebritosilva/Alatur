@@ -1,0 +1,157 @@
+<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'>
+<html xmlns='http://www.w3.org/1999/xhtml'>
+	<head>
+		<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+		<style type='text/css'>
+			.button { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 10px; color: #000000; border: 1px ridge #CC6600; font-weight: bold; margin: 1px; padding: 10px; background-color: #ECEEEB; }
+			.text   { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 11px; color: 660000; text-decoration: none; font-style: normal; }
+			.title  { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 13px; color: 660000; text-decoration:none; font-weight: bold; }
+			.table  { border-bottom:1px solid #999; border-right:1px solid #999; border-left:1px solid #999; border-top:1px solid #999; margin:1em auto; }
+			.form0  { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 13px; color:#FFF; text-decoration: none; font-weight: bold; background-color:#788EA7}
+			.form1  { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 10px; color: #000000; text-decoration: none; font-weight: bold; background-color:#ECF0EE;}
+			.form2  { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 11px; color: #333333; text-decoration: none; background-color:#F7F9F8;}
+			.form3  { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 9px; color: #333333; text-decoration: none; background-color:#F7F9F8; font-weight:bold}
+			.form4  { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 16px; color:#F00; text-decoration: none;}
+			.links  { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: 660000; text-decoration:underline; font-style: normal;}
+			.top_bg { background-color:darkgray; center repeat-x; margin:0; padding:0; font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 13px; text-decoration: none; font-weight: bold; text-align:center; color:#FFF}
+		</style>
+		<script language='JavaScript' type='text/javascript'>
+			<!-- FUNCAO PARA ENVIO DO FORMULARIO -->
+			function jSend()
+			{
+				
+			}
+
+			
+		</script>
+
+		<title>Aprova&ccedil;&atilde;o de Cota&ccedil;&otilde;es de Compra</title>
+	</head>
+	<body>
+		<table width='90%' class='table'>
+			<tr>
+				<td width='93%' height='50' align='center' class='top_bg' style='font-size: 13px'>SOLICITAÇÃO DE CONTIGÊNCIA</td>
+			</tr>
+		</table>
+		<form action='MailTo:%WFMAILTO%' method='POST' name='frmWFCotacao'>
+			<table width='90%' class='table'>
+				<tr>
+					<td width='100%'>
+						<table width='100%' style='border-bottom:1px solid #999'>
+							<tr>
+								<td colspan='2' class='top_bg' height='50px'>O usuário %cUsuario% está solicitando contigenciamento para a seguinte verba</td>
+							</tr>
+							<tr>
+								<td width='40%' class='form1'>Aprovador</td>
+								<td width='60%' class='form2'><strong>%cAprovador%</strong></td>
+							</tr>
+							<tr>
+								<td width='40%' class='form1'>Conta Orçamentária</td>
+								<td width='60%' class='form2'><strong>%cConta%</strong></td>
+							</tr>
+							<tr>
+								<td width='40%' class='form1'>Vlr. Orçado p/ Período</td>
+								<td width='60%' class='form2'><strong>%nVlrOrcado%</strong></td>
+							</tr>
+							<tr>
+								<td width='40%' class='form1'>Vlr. Utilizado</td>
+								<td width='60%' class='form2'><strong>%nVlrUtilizado%</strong></td>
+							</tr>
+							<tr>
+								<td width='40%' class='form1'>Vlr. Contingência</td>
+								<td width='60%' class='form2'><strong>%nVlrCont%</strong></td>
+							</tr>
+							<tr>
+							  <td class='form1'>Classe Valor</td>
+							  <td class='form2'><strong>%cClasse%</strong></td>
+						  </tr>
+							<tr>
+							  <td class='form1'>Centro de Custo</td>
+							  <td class='form2'><strong>%cCusto%</strong></td>
+						  </tr>
+							<tr>
+							  <td class='form1'>Produto</td>
+							  <td class='form2'><strong>%cProduto%</strong></td>
+						  </tr>
+						</table>
+					</td>
+				</tr>
+				<tr>
+					<td width='100%'>&nbsp;</td>
+				</tr>
+				<tr>
+					<td width='100%'>
+						<table width='100%' style='border-bottom:1px solid #999'>
+							<tr>
+								<td colspan='12' class='top_bg' height='50px'>Ultimas Compras</td>
+							</tr>
+							<tr>
+								<td width='17%' class='form1'>Data Compra</td>
+								<td width='34%' class='form1'>Fornecedor</td>
+								<td width='20%' class='form1'>Valor Unitário</td>
+								<td width='10%' class='form1'>Quantidade</td>
+								<td width='19%' class='form1'>Valor Total</td>
+							
+							</tr>
+							<tr>
+								<td class='form2'>%DtCompra%</td>
+								<td class='form2'>%cFornecedor%</td>
+								<td class='form2'>%nValorUnit%</td>
+								<td class='form2'>%nQuanti%</td>
+								<td class='form2'>%nValorTotal%</td>
+								
+							</tr>
+						</table>
+					</td>
+			  </tr>
+				<tr>
+					<td width='100%'>&nbsp;</td>
+				</tr>
+				<tr>
+					<td><table width='21%' style='border-bottom:1px solid #999' align='left'>
+						<tr>
+								<td width='100%' colspan='2' class='top_bg' height='25px'>Aprovação</td>
+							</tr>
+							<tr>
+								<td width='100%' class='form1'>Aprovar</td>
+								<td width='75%' class='form2' align='right'><span style='font-family: Gotham, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-style: normal; font-size: 12px;'>
+								  <input type='radio' name='radio' id='radio2' value='radio'  />
+								</span></td>
+							</tr>
+							<tr>
+								<td width='100%' class='form1'>Reprovar</td>
+								<td width='75%' class='form2' align='right'><span style='font-family: Gotham, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-style: normal; font-size: 12px;'>
+								  <input type='radio' name='radio' id='radio' value='radio' />
+								</span></td>
+							</tr>
+						</table>
+					   <table width='21%' style='border-bottom:1px solid #999' align='center'>
+					    <tr>
+					      <td colspan='2' class='top_bg' height='25px'>Motivo</td>
+				        </tr>
+					    <tr>
+					      <td width='86%' class='form1'><textarea name='textarea' cols='50' rows='5' id='textarea'></textarea></td>
+				        </tr>
+				      </table></td>
+				</tr>
+				<tr>
+					<td width='100%'><input type='button' name='cmdEnviar2' id='cmdEnviar2' class='button' value='   Enviar   ' onclick='jSend()' /></td>
+				</tr>
+				
+			</table>
+			<table width='90%' align='center'>
+				<tr>
+					<td height='52'>
+						<div class='top_bg'>
+							<div>
+								<center>
+									<font size='1px' face='verdana'>Planejamento e Controle Orçamentário</font>
+								</center>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</table>
+		</form>
+	</body>
+</html>

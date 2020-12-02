@@ -1,0 +1,82 @@
+#include "protheus.ch"
+#include "rwmake.ch"        // incluido pelo assistente de conversao do AP5 IDE em 26/09/00
+
+User Function Pagval()        // incluido pelo assistente de conversao do AP5 IDE em 26/09/00
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Declaracao de variaveis utilizadas no programa atraves da funcao    ³
+//³ SetPrvt, que criara somente as variaveis definidas pelo usuario,    ³
+//³ identificando as variaveis publicas do sistema utilizadas no codigo ³
+//³ Incluido pelo assistente de conversao do AP5 IDE                    ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+SetPrvt("_VALOR,")
+
+/// VALOR DO DOCUMENTO  DO CODIGO DE BARRA DA POSICAO 06 - 19, NO ARQUIVO E
+/// DA POSICAO 190 - 204, QUANDO NAO FOR CODIGO DE BARRA VAI O VALOR DO SE2
+
+_VALOR    := Replicate("0",15)
+_cCodBarV := Replicate("0",10)
+
+IF SUBSTR(SE2->E2_CODBAR,1,3) == "   "
+	_VALOR   :=  STRZERO((SE2->E2_SALDO*100),15,0)
+Else
+	// -- Alterado por Rodrigo em 03/10/12
+	If SUBSTR(SE2->E2_CODBAR,6,14) == _cCodBarV
+		_VALOR  :=  STRZERO((SE2->E2_SALDO*100),15,0)	
+	Else
+		_VALOR  :=  "0" + SUBSTR(SE2->E2_CODBAR,6,14)  //piva
+	EndIf
+//        _VALOR  :=  PadL(SUBSTR(SE2->E2_CODBAR,10,10), 15, "0") //piva
+Endif
+
+// Substituido pelo assistente de conversao do AP5 IDE em 26/09/00 ==> __return(_VALOR)
+Return(_VALOR)        // incluido pelo assistente de conversao do AP5 IDE em 26/09/00                          
+
+
+User Function VLPG()
+
+_cCodBarV := Replicate("0",10)
+
+IF SUBSTR(SE2->E2_CODBAR,1,3) == "   "
+	
+	nret:= STRZERO(((SE2->E2_SALDO-SE2->E2_DECRESC+SE2->E2_ACRESC)*100),15) 			                        	
+Else
+		// -- Alterado por Rodrigo em 03/10/12
+	If SUBSTR(SE2->E2_CODBAR,10,10) == _cCodBarV
+		nret:= STRZERO(((SE2->E2_SALDO-SE2->E2_DECRESC+SE2->E2_ACRESC)*100),15) 			                        	
+	Else
+		nret  :=  val((SUBSTR(SE2->E2_CODBAR,10,8)+'.'+SUBSTR(SE2->E2_CODBAR,18,2)))-SE2->E2_DECRESC+SE2->E2_ACRESC
+	EndIf
+	
+Endif 
+  
+  nret := VALEDI(nret,15,2)
+
+return nret
+
+Static Function VALEDI(nVALOR, nTAM, nDEC)
+Local cCARACTER := "ABCDEFGHIJKLMNOPQRSTUWXYZ!@#$%¨&*()_+=[{]}^~?/;.,<>:\|*-abcdefghijklmnopqrstuwxyz",nC
+
+DEFAULT nDEC := 0
+
+If VALTYPE(nVALOR) = "C"
+	For nC := 1 to Len(cCARACTER)
+		nVALOR := StrTran(nVALOR,SubStr(cCARACTER,nC,1),"")
+	Next
+	
+	cVALOR := PadL(nVALOR, nTAM,"0")
+Else
+	
+	nVALOR := Round(nVALOR,nDEC)
+	nVAL1  := Int(nVALOR)
+	
+	If nDEC > 0
+		nVAL2  := StrZero((nVALOR-nVAL1)*100,nDEC)
+		cVALOR := StrZero(nVAL1,(nTAM-nDEC))+nVAL2
+	Else
+		cVALOR := StrZero(nVAL1,nTAM)
+	Endif
+Endif
+
+Return cVALOR

@@ -1,0 +1,1984 @@
+#INCLUDE "PROTHEUS.CH"
+#INCLUDE "FWADAPTEREAI.CH"
+#INCLUDE "MATI020.CH"
+#INCLUDE "FWMVCDEF.CH"
+
+//-------------------------------------------------------------------------------------------------
+/*/{Protheus.doc} MATI020
+
+Funcao de integracao com o adapter EAI para recebimento do cadastro de
+Fornecedor (SA2) utilizando o conceito de mensagem unica.
+
+@param   cXml          Vari·vel com conte˙do XML para envio/recebimento.
+@param   nTypeTrans    Tipo de transaÁ„o. (Envio/Recebimento)
+@param   cTypeMessage  Tipo de mensagem. (Business Type, WhoIs, etc)
+
+@author  Leandro Luiz da Cruz
+@version P11
+@since   26/11/2012
+@return  lRet - (boolean)  Indica o resultado da execuÁ„o da funÁ„o
+cXmlRet - (caracter) Mensagem XML para envio
+/*/
+//-------------------------------------------------------------------------------------------------
+Function MATI020(cXML, nTypeTrans, cTypeMessage, cVersion)
+	Local cVersao  	:= ""
+	Local cXmlRet  	:= ""
+	Local cCodVer 	:= "" //Codigo completo da versao
+	Local cNameMsg	:= "CUSTOMERVENDOR"
+	Local cError	:= ""
+	Local cWarning 	:= ""
+	Local lRet     	:= .T.
+	Local aRet     	:= {}
+
+	Private oXml   	:= Nil
+	Private cPISSRA	:= ""
+
+	Default cXML			:= ""
+	Default cTypeMessage	:= ""
+	Default nTypeTrans		:= 0
+
+	//Valida vers„o de envio e/ou recebimento
+	cVersao := StrTokArr(cVersion, ".")[1]
+	cCodVer := StrTran(cVersion,".","")
+
+	//Mensagem de Entrada
+	If nTypeTrans == TRANS_RECEIVE
+		oXml := xmlParser(cXml, "_", @cError, @cWarning)
+		
+		If cTypeMessage == EAI_MESSAGE_BUSINESS .Or. cTypeMessage == EAI_MESSAGE_RESPONSE
+			If cVersao == "1"
+				aRet := v1000(cXml, nTypeTrans, cTypeMessage)
+			ElseIf cVersao == "2"
+				aRet := v2000(cXml, nTypeTrans, cTypeMessage,oXML,cCodVer)
+			Else
+				aAdd(aRet,.F.)
+				aAdd(aRet,STR0004) // "A vers„o da mensagem informada n„o foi implementada!"
+			EndIf
+		ElseIf cTypeMessage == EAI_MESSAGE_WHOIS
+			aRet := v2000(cXml, nTypeTrans, cTypeMessage,oXML,cCodVer) 
+		Endif
+	ElseIf nTypeTrans == TRANS_SEND
+		If cVersao == "1"
+			aRet := v1000(cXml, nTypeTrans, cTypeMessage)
+		ElseIf cVersao == "2"
+			aRet := v2000(cXml, nTypeTrans, cTypeMessage,,cCodVer)
+		Else
+			aAdd(aRet,.F.)
+			aAdd(aRet,STR0004) // "A vers„o da mensagem informada n„o foi implementada!"
+		EndIf
+	EndIf
+
+	If Len(aRet) > 0
+	lRet    := aRet[1]
+	cXMLRet := aRet[2]
+	Endif
+	
+Return {lRet, cXmlRet , cNameMsg}
+
+/*
+‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±…ÕÕÕÕÕÕÕÕÕÕ—ÕÕÕÕÕÕÕÕÕÕÀÕÕÕÕÕÕÕ—ÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÀÕÕÕÕÕÕ—ÕÕÕÕÕÕÕÕÕÕÕÕÕª±±
+±±∫Programa  ≥IntegDef  ∫Autor  ≥ Marcelo C. Coutinho  ∫ Data ≥  28/10/11   ∫±±
+±±ÃÕÕÕÕÕÕÕÕÕÕÿÕÕÕÕÕÕÕÕÕÕÕÕÕ ÕÕÕÕÕÕÕœÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕ ÕÕÕÕÕÕœÕÕÕÕÕÕÕÕÕÕÕÕÕπ±±
+±±∫ Desc.    ≥ Funcao de integracao com o adapter EAI para recebimento e    ∫±±
+±±∫          ≥ envio de informaÁıes do cadastro de fornecedores    (SA2)    ∫±±
+±±∫          ≥ utilizando o conceito de mensagem unica.                     ∫±±
+±±ÃÕÕÕÕÕÕÕÕÕÕÿÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕπ±±
+±±∫ Param.   ≥ cXML - Variavel com conteudo xml para envio/recebimento.     ∫±±
+±±∫          ≥ nTypeTrans - Tipo de transacao. (Envio/Recebimento)          ∫±±
+±±∫          ≥ cTypeMessage - Tipo de mensagem. (Business Type, WhoIs, etc) ∫±±
+±±ÃÕÕÕÕÕÕÕÕÕÕÿÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕπ±±
+±±∫ Retorno  ≥ aRet - Array contendo o resultado da execucao e a mensagem   ∫±±
+±±∫          ≥        Xml de retorno.                                       ∫±±
+±±∫          ≥ aRet[1] - (boolean) Indica o resultado da execuÁ„o da funÁ„o ∫±±
+±±∫          ≥ aRet[2] - (caracter) Mensagem Xml para envio                 ∫±±
+±±ÃÕÕÕÕÕÕÕÕÕÕÿÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕπ±±
+±±∫ Uso      ≥ MATA020                                                      ∫±±
+±±»ÕÕÕÕÕÕÕÕÕÕœÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕº±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ
+*/
+
+Static Function v1000( cXML, nTypeTrans, cTypeMessage )
+
+	Local lRet     	:= .T.
+	Local lExclui     := .T.
+	Local lA2Pais		:= .F.
+	Local cXMLRet  	:= ""
+	Local cError		:= ""
+	Local cWarning 	:= ""
+	Local aRet        := {}
+	Local aCab			:= {}
+	Local aItens		:= {}
+	Local aErroAuto	:= {}
+	Local nOpcx			:= 0
+	Local nX          := 0
+	Local nCount      := 0
+	Local nTamCpo		:= 0
+	Local cLogErro 	:= ""
+	Local cDatAtu     := ""
+	Local cEvent      := "upsert"
+	Local cValGovern  := ""
+	Local cCodMun     := ""
+	Local cCodEst     := ""
+	Local cCodFor     := ""
+	Local cLojFor     := ""
+	Local cCodigo		:= ''
+	Local cLoja	 		:= ''
+	Local cStringTemp		 := ""
+
+	//-- Variaveis utilizada no De/Para de Codigo Interno X Codigo Externo
+	Local cMarca      := "" //-- Armazena a Marca (LOGIX,PROTHEUS,RM...) que enviou o XML
+	Local cValExt     := "" //-- Codigo externo utilizada no De/Para de codigos - Tabela XXF
+	Local cValInt     := "" //-- Codigo interno utilizado no De/Para de codigos - Tabela XXF
+	Local cAlias      := "SA2"
+	Local cCampo		:= "A2_COD"
+	Local cType       := ""
+
+	Local cValSRAInt := ""
+	Local cPais		:= ""
+	Local cCodPais	:= ""
+	Local cEst			:= ""
+	Local aRetPe		:= {}
+	Local cEndereco	:= ""
+	LOcal cTel			:= ""
+	Local lEAICodUnq    := FwHasEAI("MATA020B")
+	Local lUpsert		:= .T.
+	Local cValIntA1		:= ""
+	Local cValIntA2		:= ""
+
+	Private oXmlM020		  := Nil
+	Private nCountM020	  := 0
+	Private lMsErroAuto    := .F.
+	Private lAutoErrNoFile := .T.
+
+	If nTypeTrans == TRANS_RECEIVE
+
+		If cTypeMessage == EAI_MESSAGE_BUSINESS
+
+			oXmlM020 := XmlParser(cXml, "_", @cError, @cWarning)
+			If oXmlM020 <> Nil .And. Empty(cError) .And. Empty(cWarning)
+
+				If (AllTrim( Upper( oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Type:Text ) ) == "VENDOR" .Or. ;
+				AllTrim( Upper( oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Type:Text ) ) == "BOTH")
+
+					If AllTrim( Upper( oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Type:Text ) ) == "BOTH"
+						cType := AllTrim(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Type:Text)
+						cXml  := StrTran(cXml,"<Type>"+cType+"</Type>","<Type>CUSTOMER</Type>")
+						aAdd(aRet , FWIntegDef('MATA030',cTypeMessage,nTypeTrans,cXml))
+						If !Empty(aRet)
+							lRet     := aRet[1][1]
+							cXmlRet  += aRet[1][2]
+						EndIf
+					EndIf
+
+					If Type("oXmlM020:_TotvsMessage:_MessageInformation:_Product:_Name:Text") <> "U"
+						cMarca :=  oXmlM020:_TotvsMessage:_MessageInformation:_Product:_Name:Text
+					EndIf
+					If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessEvent:_Identification:_Key:Text") <> "U"
+						cValExt := (oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessEvent:_Identification:_Key:Text)
+					ElseIf Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Code:Text") <> "U"
+						cValExt := oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Code:Text
+					EndIf
+
+					//--------------------------------------------------------------------------------------
+					//-- Tratamento utilizando a tabela XXF com um De/Para de codigos
+					//--------------------------------------------------------------------------------------
+					cValInt := CFGA070INT( cMarca, cAlias, cCampo, cValExt )
+
+					If Empty(cValInt)
+						If Upper(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessEvent:_Event:Text) == "UPSERT"
+							nOpcx := 3
+							Inclui:= .T.
+							Altera:= .F.
+						Elseif Upper(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessEvent:_Event:Text) == "DELETE"
+							lExclui := .F.
+						Endif
+					Else
+						If Upper(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessEvent:_Event:Text) == "UPSERT"
+							nOpcx := 4
+							Inclui:= .F.
+							Altera:= .T.
+						Elseif Upper(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessEvent:_Event:Text) == "DELETE"
+							nOpcx := 5
+						Endif
+					Endif
+
+					If nOpcx == 3
+						nTamCpo 	:= TamSX3('A2_COD')[1] + TamSX3('A2_LOJA')[1]
+						cValInt  := PadR(cValExt,nTamCpo)
+						If Empty(Posicione('SX3',2,Padr('A2_COD' ,10),'X3_RELACAO'))
+							cCodFor := Substr( cValInt, 1, TamSX3('A2_COD')[1] )
+							aAdd( aCab, { "A2_COD" , cCodFor , Nil } )
+						EndIf
+
+						If Empty(Posicione('SX3',2,Padr('A2_LOJA',10),'X3_RELACAO'))
+							cLojFor := Substr( cValInt, TamSX3('A2_COD')[1] + 1, TamSX3('A2_LOJA')[1] )
+							aAdd( aCab, { "A2_LOJA", cLojFor, Nil } )
+						EndIf
+
+						Inclui:= .T.
+						Altera:= .F.
+					Else
+						cCodFor := Substr( cValInt, 1, TamSX3('A2_COD')[1] )
+						cLojFor := Substr( cValInt, TamSX3('A2_COD')[1] + 1, TamSX3('A2_LOJA')[1] )
+
+						aAdd( aCab, { "A2_COD" , cCodFor , Nil } )
+						aAdd( aCab, { "A2_LOJA", cLojFor, Nil } )
+					EndIf
+
+					If nOpcx <> 5
+						If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Name:Text") <> "U"
+							Aadd( aCab, { "A2_NOME", AllTrim(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Name:Text), Nil })
+						EndIf
+						If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ShortName:Text") <> "U"
+							Aadd( aCab, { "A2_NREDUZ", AllTrim(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ShortName:Text),   Nil })
+						EndIf
+						If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_EntityType:Text") <> "U"
+							If  Upper( oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_EntityType:Text ) == 'PERSON'
+								Aadd( aCab, { "A2_TIPO", 'F', Nil })
+							ElseIf Upper( oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_EntityType:Text ) == 'COMPANY'
+								Aadd( aCab, { "A2_TIPO", 'J', Nil })
+							EndIf
+						Else
+							Aadd( aCab, { "A2_TIPO", 'X', Nil })
+						EndIf
+						If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Address:Text") <> "U"
+							If !Empty(AllTrim(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Address:Text))
+								cEndereco := AllTrim(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Address:Text)
+
+								If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Number:Text") <> "U"
+									If !Empty(AllTrim(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Number:Text))
+										cEndereco += ", " + AllTrim(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Number:Text)
+									Endif
+								Endif
+
+								cEndereco := AllTrim(Upper(cEndereco))
+
+								Aadd( aCab, { "A2_END",cEndereco, Nil })
+							Endif
+						EndIf
+						If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Complement:Text") <> "U"
+							Aadd( aCab, { "A2_COMPLEM", oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Complement:Text, Nil })
+						EndIf
+						If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_District:Text") <> "U"
+							Aadd( aCab, { "A2_BAIRRO",  oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_District:Text,   Nil })
+						EndIf
+
+						//Tabela Pais
+						DbSelectArea("SYA")
+
+						If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Country:_Code:Text") <> "U"
+							If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Country:_Code:Text") != "U" .And. !Empty(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Country:_Code:Text)
+                            cCodPais := PadR(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Country:_Code:Text, TamSx3("YA_CODGI")[1])
+
+                            SYA->(DbSetOrder(1))
+                            If SYA->(DbSeek(xFilial("SYA") + PadR(cCodPais,TamSx3("YA_CODGI")[1])))
+                            	lA2Pais := .T.
+                            Endif
+
+                            If lA2Pais
+                            	Aadd( aCab, { "A2_PAIS",cCodPais, Nil })
+                            Else
+                            	If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Country:_Description:Text") != "U" .And. !Empty(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Country:_Description:Text)
+                            		cPais := AllTrim(Upper(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Country:_Description:Text))
+
+                            		cCodPais := PadR(Posicione("SYA",2,xFilial("SYA") + PadR(cPais,TamSx3("YA_DESCR")[1]),"YA_CODGI"),TamSx3("A2_PAIS")[1])
+
+                            		If !Empty(cCodPais)
+											If cCodPais <> A2030PALOC("SA2",1)
+												cEst := "EX"
+											EndIf
+											Aadd( aCab, { "A2_PAIS",cCodPais, Nil })
+										Else
+											If cPais <> A2030PALOC("SA2",2)
+												cEst := "EX"
+											EndIf
+										EndIf
+                            	Endif
+                            Endif
+                            SYA->(DbSetOrder(1))
+
+							ElseIf Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Country:_Description:Text") != "U" .And. !Empty(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Country:_Description:Text)
+								cPais := AllTrim(Upper(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Country:_Description:Text))
+
+								cCodPais := PadR(Posicione("SYA",2,xFilial("SYA") + PadR(cPais,TamSx3("YA_DESCR")[1]),"YA_CODGI"),TamSx3("A2_PAIS")[1])
+
+								If !Empty(cCodPais)
+									If cCodPais <> A2030PALOC("SA2",1)
+										cEst := "EX"
+									EndIf
+									Aadd( aCab, { "A2_PAIS",cCodPais, Nil })
+								Else
+									If cPais <> A2030PALOC("SA2",2)
+										cEst := "EX"
+									Endif
+								Endif
+
+								SYA->(DbSetOrder(1))
+							Endif
+						Endif
+
+						If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_State:_Code:Text") <> "U"
+							If Empty(cEst)
+								cEst := AllTrim(Upper(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_State:_Code:Text))
+							Endif
+
+							Aadd( aCab, { "A2_EST",cEst,   Nil })
+						EndIf
+
+						If cEst <> "EX" .And. Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_City:_Code:Text") <> "U"
+							cCodMun := oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_City:_Code:Text
+							If Len(cCodMun) == 7
+								cCodMun := SubStr(cCodMun,3,7)
+							EndIf
+							Aadd( aCab, { "A2_COD_MUN", cCodMun , Nil })
+						EndIf
+
+						If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_City:_Description:Text") <> "U"
+							Aadd( aCab, { "A2_MUN",     oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_City:_Description:Text,   Nil })
+						EndIf
+						If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_ZIPCode:Text") <> "U"
+							cStringTemp:=RemCharEsp(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_ZIPCode:Text)
+							Aadd( aCab, { "A2_CEP",cStringTemp,   Nil })
+						EndIf
+
+						If Type("oXmlM020:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID") <> "U"
+							If  ValType(oXmlM020:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID) <> "A"
+								XmlNode2Arr(oXmlM020:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID, "_ID")
+							EndIf
+							For nX := 1 To Len( oXmlM020:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID )
+								cValGovern := RemCharEsp(oXmlM020:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID[nX]:TEXT)
+								If AllTrim( Upper( oXmlM020:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID[nX]:_NAME:TEXT ) ) == 'INSCRICAO ESTADUAL'
+									Aadd( aCab, { "A2_INSCR",  cValGovern, Nil })
+								ElseIf AllTrim( Upper( oXmlM020:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID[nX]:_NAME:TEXT ) ) == 'INSCRICAO MUNICIPAL'
+									Aadd( aCab, { "A2_INSCRM", cValGovern, Nil })
+								ElseIf AllTrim( Upper( oXmlM020:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID[nX]:_NAME:TEXT ) )  $ 'CPF/CNPJ'
+									Aadd( aCab, { "A2_CGC",    cValGovern, Nil })
+								ElseIf  AllTrim( Upper( oXmlM020:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID[nX]:_NAME:TEXT ) )  $ 'INSCRICAO PIS'
+									cPISSRA := cValGovern //Indica que autonomo e funcionario
+					          ELSEIF  AllTrim( Upper( oXmlM020:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID[nX]:_NAME:TEXT ) )  $ 'RG'
+                                        Aadd( aCab, { "A2_PFISICA", PadR(cValGovern,TamSx3("A1_PFISICA")[1]), Nil })
+								EndIf
+							Next nX
+						EndIf
+						If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_POBox:Text") <> "U"
+							Aadd( aCab, { "A2_CX_POST", oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_POBox:Text,       Nil })
+						EndIf
+						If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_Email:Text") <> "U"
+							Aadd( aCab, { "A2_EMAIL",   oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_Email:Text,       Nil })
+						EndIf
+						If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_PhoneNumber:Text") <> "U"
+							cStringTemp:=RemCharEsp(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_PhoneNumber:Text)
+							aTelefone := RemDddTel(cStringTemp)
+							aAdd(aCab, {"A2_TEL",aTelefone[1], Nil})
+							If !Empty(aTelefone[2])
+								If Len(AllTrim(aTelefone[2])) == 2
+									aTelefone[2] := "0" + aTelefone[2]
+								Endif
+								aAdd(aCab, {"A2_DDD",aTelefone[2], Nil})
+							EndIf
+							If !Empty(aTelefone[3])
+								aAdd(aCab, {"A2_DDI",aTelefone[3], Nil})
+							EndIf
+						EndIf
+						If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_FaxNumber:Text") <> "U"
+							cStringTemp:=RemCharEsp(oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_FaxNumber:Text)
+							aTelefone := RemDddTel(cStringTemp)
+							Aadd( aCab, { "A2_FAX",aTelefone[1],   Nil })
+						EndIf
+						If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_HomePage:Text") <> "U"
+							Aadd( aCab, { "A2_HPAGE",   oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_HomePage:Text,    Nil })
+						EndIf
+						If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfContacts:_Contact:_Name:Text") <> "U"
+							Aadd( aCab, { "A2_CONTATO", oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfContacts:_Contact:_Name:Text, Nil })
+						EndIf
+						If Type("oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_RegisterSituation:Text") <> "U"
+							If Upper( oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_RegisterSituation:Text ) == 'ACTIVE'
+								Aadd( aCab, { "A2_MSBLQL", '2', Nil })
+							Else
+								Aadd( aCab, { "A2_MSBLQL", '1', Nil })
+							EndIf
+						Else
+							Aadd( aCab, { "A2_MSBLQL", '1', Nil })
+						EndIf
+					Else
+
+						// Necessario para atender a exclusao na mensagem unica,
+						// quando informado o PIS - Obrigatorio para exclusao na SRA
+						// Quando Fornecedor e um Funcionario
+
+						If Type("oXmlM020:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID") <> "U"
+							If  ValType(oXmlM020:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID) <> "A"
+								XmlNode2Arr(oXmlM020:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID, "_ID")
+							EndIf
+							For nX := 1 To Len( oXmlM020:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID )
+								cValGovern := oXmlM020:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID[nX]:TEXT
+								If  AllTrim( Upper( oXmlM020:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID[nX]:_NAME:TEXT ) )  $ 'INSCRICAO PIS'
+									cPISSRA := cValGovern //Indica que autonomo e funcionario
+								EndIf
+							Next nX
+						EndIf
+					EndIf
+
+					// ponto de entrada inserido para controlar dados especificos do cliente
+					If ExistBlock("MT020EAI")
+						aRetPe := ExecBlock("MT020EAI",.F.,.F.,{aCab,nOpcx})
+						If ValType(aRetPe) == "A" .And. ValType(aRetPe[1]) == "A"
+							aCab 	:= aClone(aRetPe)
+						EndIf
+					EndIf
+
+					//Ordena Array conforme dicionario de dados
+					aCab := OrdenaArray(aCab)
+
+					If nOpcx <> 5
+						nPos1 := aScan(aCab,{|x| AllTrim(x[1]) = "A2_COD"})
+						nPos2 := aScan(aCab,{|x| AllTrim(x[1]) = "A2_LOJA"})
+
+						If nPos1 > 0 .And. nPos2 > 0
+							SA2->(DbSetOrder(1))
+							If SA2->(DbSeek(xFilial("SA2") + PadR(aCab[nPos1,2],TamSx3("A2_COD")[1]) + PadR(aCab[nPos2,2],TamSx3("A2_LOJA")[1])))
+								nOpcx := 4
+								Inclui:= .F.
+								Altera:= .T.
+							Else
+								nOpcx := 3
+								Inclui:= .T.
+								Altera:= .F.
+							Endif
+						Endif
+					Endif
+
+					BEGIN TRANSACTION
+
+						If nOpcx == 5 .And. !lExclui
+							lMsErroAuto := .F.
+						Else
+							If  nOpcx == 5
+								cValInt := cCodFor+cLojFor
+								CFGA070Mnt(cMarca , cAlias, cCampo , cValExt , cValInt, .T. )
+							EndIf
+
+							MSExecAuto({|x,y| MATA020(x,y)},aCab,nOpcx)
+						EndIf
+
+						If lMsErroAuto
+							aErroAuto := GetAutoGRLog()
+							For nCount := 1 To Len(aErroAuto)
+								cLogErro += _NoTags(aErroAuto[nCount])
+							Next nCount
+							// Monta XML de Erro de execuÁ„o da rotina auadtomatica.
+							lRet := .F.
+							cXMLRet := cLogErro
+							DisarmTransaction()
+						Else
+							cValSRAInt := GPEI090NRcv( CFGA070INT( cMarca, "SRA", "RA_MAT", cValExt ), { "RA_FILIAL", "RA_MAT" } )
+
+							If (!Empty(cPISSRA) .AND. (nOpcx == 3 .OR. nOpcx == 4) ) .OR. !Empty(cValSRAInt)
+								Gp265GrvFun(nOpcX, cPISSRA, cMarca, cCampo, cValExt, cAlias, cValSRAInt)
+							EndIf
+
+							cValInt := SA2->(A2_COD+A2_LOJA)
+
+							If nOpcx <> 5 .And. !Empty(cValExt)	.And.!Empty(cValInt)
+								If CFGA070Mnt( cMarca, cAlias, cCampo, cValExt, cValInt , .F. )
+
+									//-- Se integraÁ„o com cÛdigo unico estiver habilitada, devolve o cÛdigo ˙nico, porÈm na XXF deve ser gravado sempre CÛdigo+Loja
+									If lEAICodUnq
+										cValInt	:= SA2->A2_COD
+									Else
+										cValInt := SA2->(A2_COD+A2_LOJA)
+									EndIf
+
+									//-- Monta xml com status do processamento da rotina automatica OK.
+									cXMLRet += "<CustomerVendorCode>"+ cValExt +"</CustomerVendorCode>"  //-- Valor recebido na tag "BusinessMessage:BusinessContent:Code"
+									cXMLRet += "<ExternalCode>"+       cValInt       +"</ExternalCode>"	//-- Valor gerado
+									cXMLRet += "<DestinationInternalId>"+ cValInt +"</DestinationInternalId>"
+									cXMLRet += "<OriginInternalId>"+       cValExt       +"</OriginInternalId>"
+								EndIf
+							EndIf
+						EndIf
+
+					END TRANSACTION
+				ElseIf AllTrim( Upper( oXmlM020:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Type:Text ) ) == "CUSTOMER"
+					aAdd (aRet , FWIntegDef("MATA030",cTypeMessage,nTypeTrans,cXml))
+					If !Empty(aRet)
+						lRet    := aRet[1][1]
+						cXmlRet += aRet[1][2]
+					EndIf
+
+				EndIf
+
+			Else
+				// "Falha ao gerar o objeto XML"
+				lRet := .F.
+				cXMLRet := STR0003//"Falha ao manipular XML"
+			EndIf
+
+		ElseIf cTypeMessage == EAI_MESSAGE_RESPONSE
+
+			//-- Gravacao do De/Para Codigo Interno X Codigo Externo
+			oXmlM020 := XmlParser(cXml, "_", @cError, @cWarning)
+			If oXmlM020 <> Nil .And. Empty(cError) .And. Empty(cWarning)
+				If Upper(oXmlM020:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_Status:Text) == "OK"
+					If Type("oXmlM020:_TotvsMessage:_MessageInformation:_Product:_Name:Text") <> "U"
+						cMarca :=  oXmlM020:_TotvsMessage:_MessageInformation:_Product:_Name:Text
+					EndIf
+
+					//adequacao das tags novas de retorno.
+					If Type("oXmlM020:_TOTVSMessage:_ResponseMessage:_ReturnContent:_OriginInternalId:Text") <> "U"
+						cValInt := oXmlM020:_TOTVSMessage:_ResponseMessage:_ReturnContent:_OriginInternalId:Text
+					ElseIf Type("oXmlM020:_TOTVSMessage:_ResponseMessage:_ReturnContent:_CustomerVendorCode:Text") <> "U"
+						cValInt := oXmlM020:_TOTVSMessage:_ResponseMessage:_ReturnContent:_CustomerVendorCode:Text
+					EndIf
+
+					If Type("oXmlM020:_TOTVSMessage:_ResponseMessage:_ReturnContent:_DestinationInternalId:Text") <> "U"
+						cValExt := oXmlM020:_TOTVSMessage:_ResponseMessage:_ReturnContent:_DestinationInternalId:Text
+					ElseIf Type("oXmlM020:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ExternalCode:Text") <> "U"
+						cValExt := oXmlM020:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ExternalCode:Text
+					EndIf
+
+					If Type("oXmlM020:_TOTVSMessage:_ResponseMessage:_ReceivedMessage:_Event:Text") <> "U" .And. !Empty(oXmlM020:_TOTVSMessage:_ResponseMessage:_ReceivedMessage:_Event:Text)
+	            		If lEAICodUnq
+	            			SA1->(dbSetOrder(1))
+		                	If SA1->(MsSeek(xFilial("SA1") + RTrim(cValInt)))
+		                		cValIntA1	:= SA1->(A1_COD + A1_LOJA )
+		                	EndIf
+
+		               		SA2->(dbSetOrder(1))
+		                	If SA2->(MsSeek(xFilial("SA2") + RTrim(cValInt)))
+		                		cValIntA2	:= SA2->( A2_COD + A2_LOJA )
+		                	EndIf
+
+		                	If Upper(oXmlM020:_TOTVSMessage:_ResponseMessage:_ReceivedMessage:_Event:Text) == "UPSERT"
+		                		If !Empty(cValIntA1)
+	            					CFGA070Mnt(cMarca,cAlias,cCampo,cValExt,cValIntA1,.F.)
+	            				Endif
+
+	            				If !Empty(cValIntA2)
+	            					CFGA070Mnt(cMarca,cAlias,cCampo,cValExt,cValIntA2,.F.)
+	            				Endif
+	            			Elseif Upper(oXmlM020:_TOTVSMessage:_ResponseMessage:_ReceivedMessage:_Event:Text) == "DELETE"
+	            				If !Empty(cValIntA1)
+	            					CFGA070Mnt(cMarca,cAlias,cCampo,cValExt,cValIntA1,.T.)
+	            				Endif
+
+	            				If !Empty(cValIntA2)
+	            					CFGA070Mnt(cMarca,cAlias,cCampo,cValExt,cValIntA2,.T.)
+	            				Endif
+	            			Endif
+		                Else
+		                	If Upper(oXmlM020:_TOTVSMessage:_ResponseMessage:_ReceivedMessage:_Event:Text) == "UPSERT"
+	            				CFGA070Mnt(cMarca,cAlias,cCampo,cValExt,cValInt,.F.)
+	            			Elseif Upper(oXmlM020:_TOTVSMessage:_ResponseMessage:_ReceivedMessage:_Event:Text) == "DELETE"
+	            				CFGA070Mnt(cMarca,cAlias,cCampo,cValExt,cValInt,.T.)
+	            			Endif
+		            	EndIf
+	            	Else
+	            		//Tratamento caso seja resposta de um cadastro de Cliente
+						// ObtÈm a mensagem original enviada
+						If Type("oXmlM020:_TOTVSMessage:_ResponseMessage:_ReceivedMessage:_MessageContent:Text") != "U" .And. !Empty(oXmlM020:_TOTVSMessage:_ResponseMessage:_ReceivedMessage:_MessageContent:Text)
+							cXML := oXmlM020:_TOTVSMessage:_ResponseMessage:_ReceivedMessage:_MessageContent:Text
+						Else
+							lRet    := .F.
+							cXmlRet := STR0019 //"Conte˙do do MessageContent vazio!"
+							Return {lRet, cXmlRet}
+						EndIf
+
+						// Faz o parse do XML em um objeto
+						oXML := XmlParser(cXML, "_", @cError, @cWarning)
+
+						If oXML != Nil .And. Empty(cError) .And. Empty(cWarning)
+							If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Type:Text") != "U"
+								If Upper(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Type:Text) == 'CUSTOMER'
+									cAlias := 'SA1'
+									cCampo	:= 'A1_COD'
+								Endif
+							Endif
+
+							If !Empty(cValExt) .And.!Empty(cValInt)
+								//Se a mensagem CustomerReserveID estiver habilitada campo Loja n„o È trafegado nas mensagens,
+							 	//por esse motivo encontra-se a loja de acordo com o cÛdigo ˙nico das marcas
+			                	If lEAICodUnq
+			                		If cAlias == "SA1"
+				                		SA1->(dbSetOrder(1))
+				                		If SA1->(MsSeek(xFilial("SA1") + RTrim(cValInt)))
+				                			cValInt := SA1->(A1_COD + A1_LOJA )
+				                		EndIf
+				               		ElseIf cAlias == "SA2"
+				                		SA2->(dbSetOrder(1))
+				                		If SA2->(MsSeek(xFilial("SA2") + RTrim(cValInt)))
+				                			cValInt		:= SA2->( A2_COD + A2_LOJA )
+				                		EndIf
+				                	EndIf
+			                	EndIf
+
+								If Upper(oXML:_TOTVSMessage:_BusinessMessage:_BusinessEvent:_Event:Text) == "UPSERT"
+									CFGA070Mnt(cMarca, cAlias, cCampo, cValExt, cValInt, .F.)
+								ElseIf Upper(oXML:_TOTVSMessage:_BusinessMessage:_BusinessEvent:_Event:Text) == "DELETE"
+									CFGA070Mnt(cMarca, cAlias, cCampo, cValExt, cValInt, .T.)
+								EndIf
+							EndIf
+						Endif
+					EndIf
+				Else //Erro
+					If Type("oXmlM020:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_ListOfMessages:_Message") != "U"
+						// Se n„o for array
+						If Type("oXmlM020:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_ListOfMessages:_Message") != "A"
+							// Transforma em array
+							XmlNode2Arr(oXmlM020:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_ListOfMessages:_Message, "_Message")
+						EndIf
+
+						// Percorre o array para obter os erros gerados
+						For nCount := 1 To Len(oXmlM020:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_ListOfMessages:_Message)
+							cError := oXmlM020:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_ListOfMessages:_Message[nCount]:Text + CRLF
+						Next nCount
+
+						lRet := .F.
+						cXmlRet := cError
+					Endif
+				Endif
+			EndIf
+
+		ElseIf   cTypeMessage == EAI_MESSAGE_WHOIS
+			cXMLRet := '1.000'
+		EndIf
+
+		//Envio da mensagem
+	ElseIf nTypeTrans == TRANS_SEND
+
+		oModelSA2 := FWModelActive() //Modelo Ativo da SA2
+		If oModelSA2:GetOperation() == MODEL_OPERATION_DELETE
+			cEvent := 'delete'
+		EndIf
+
+		cDatAtu := INTDTANO(dDataBase)
+
+		//-- Retorna o codigo do estado a partir da sigla
+		cCodEst  := Tms120CdUf(SA2->A2_EST,'1')
+
+		//-- Envio do codigo de acordo com padrao IBGE (cod. estado + cod. municipio)
+		If !Empty(SA2->A2_COD_MUN)
+			cCodMun  := Alltrim(cCodEst) + AllTrim(SA2->A2_COD_MUN)
+		Else
+			cCodMun := cCodEst + AllTrim(SA2->A2_COD_MUN)
+		Endif
+
+		cXMLRet := '<BusinessEvent>'
+		cXMLRet +=     '<Entity>CustomerVendor</Entity>'
+		cXMLRet +=     '<Event>' + cEvent + '</Event>'
+		cXMLRet +=     '<Identification>'
+		cXMLRet +=         '<key name="Code">' + IIf(!lEAICodUnq,SA2->A2_COD + SA2->A2_LOJA,SA2->A2_COD) + '</key>'
+		cXMLRet +=     '</Identification>'
+		cXMLRet += '</BusinessEvent>'
+
+		cXMLRet += '<BusinessContent>'
+		cXMLRet += 	'<CompanyId>' + cEmpAnt + '</CompanyId>'
+		cXMLRet += 	'<Code>' + IIf(!lEAICodUnq,SA2->A2_COD + SA2->A2_LOJA,SA2->A2_COD) + '</Code>'
+		cXMLRet += 	'<ShortName>' + _NoTags(AllTrim(SA2->A2_NREDUZ)) + '</ShortName>'
+		cXMLRet += 	'<Name>' + _NoTags(AllTrim(SA2->A2_NOME)) + '</Name>'
+		cXMLRet += 	'<Type>' + 'Vendor' + '</Type>'
+
+		If SA2->A2_TIPO == 'F'
+			cXMLRet += 	'<EntityType>' + 'Person' + '</EntityType>'
+			cCNPJCPF   := "CPF"
+		Else
+			cXMLRet += 	'<EntityType>' + 'Company' + '</EntityType>'
+			cCNPJCPF   := "CNPJ"
+		EndIf
+
+		If SA2->A2_MSBLQL == '1'
+			cXMLRet += 	'<RegisterSituation>' + "Inactive" + '</RegisterSituation>'
+		Else
+			cXMLRet += 	'<RegisterSituation>' + "Active" + '</RegisterSituation>'
+		EndIf
+
+		cXMLRet += 	'<GovernmentalInformation>'
+		cXMLRet += 		'<Id expiresOn="" issueOn="' + cDatAtu + '" name="INSCRICAO ESTADUAL" scope="State">' + SA2->A2_INSCR + '</Id>'
+		cXMLRet +=			'<Id expiresOn="" issueOn="' + cDatAtu + '" name="INSCRICAO MUNICIPAL" scope="Municipal">' + SA2->A2_INSCRM + '</Id>'
+		cXMLRet +=		 	'<Id expiresOn="" issueOn="' + cDatAtu + '" name="' + cCNPJCPF + '" scope="Federal">' + SA2->A2_CGC + '</Id>'
+		cXMLRet +=      	'<Id scope="Federal" name="RG" issueOn="' + cDatAtu + '" expiresOn="">' + SA2->A2_PFISICA + '</Id>'
+		cXMLRet += 	'</GovernmentalInformation>'
+
+		cXMLRet += 	'<Address>'
+		cXMLRet += 		'<Address>' + _NoTags(trataEnd(SA2->A2_END,"L")) + '</Address>'
+		cXMLRet += 		'<Number>' + trataEnd(SA2->A2_END,"N") + '</Number>'
+		cXMLRet +=  	   '<Complement>' + Iif(Empty(SA2->A2_COMPLEM),_NoTags(trataEnd(SA2->A2_END,"C")),_NoTags(SA2->A2_COMPLEM)) + '</Complement>'
+		cXMLRet += 		'<District>' + _NoTags(SA2->A2_BAIRRO) + '</District>'
+		cXMLRet +=			'<City>'
+		cXMLRet +=				'<Code>' + cCodMun + '</Code>'
+		cXMLRet +=				'<Description>' + _NoTags(SA2->A2_MUN) + '</Description>'
+		cXMLRet += 	 		'</City>'
+		cXMLRet +=			'<State>'
+		cXMLRet +=				'<Code>' + SA2->A2_EST + '</Code>'
+		cXMLRet +=				'<Description>' + AllTrim(Posicione("SX5",1, xFilial("SX5") + "12" + SA2->A2_EST, "X5DESCRI()" )) + '</Description>'
+		cXMLRet +=			'</State>'
+		cXMLRet +=			'<ZIPCode>' + SA2->A2_CEP + '</ZIPCode>'
+		//cXMLRet +=			'<Country>' + SA2->A2_PAIS + '</Country>'
+
+		cXMLRet +=       '<Country>'
+		cXMLRet +=             '<Code>' + Rtrim(SA2->A2_PAIS) + '</Code>'
+		//cXMLRet +=             '<CountryInternalId>' + Rtrim(M->A2_PAIS) + '</CountryInternalId>'
+		If Inclui .Or. Altera
+			cXMLRet +=         '<Description>' + Rtrim(Posicione("SYA",1,xFilial("SYA")+SA2->A2_PAIS,"YA_DESCR")) + '</Description>'
+		EndIf
+		cXMLRet +=       '</Country>'
+
+		cXMLRet += 	'</Address>'
+
+		If !Empty(SA2->A2_DDI)
+			cTel := AllTrim(SA2->A2_DDI)
+		EndIf
+
+		If !Empty(SA2->A2_DDD)
+			If !Empty(cTel)
+				cTel += AllTrim(SA2->A2_DDD)
+			Else
+				cTel := AllTrim(SA2->A2_DDD)
+			Endif
+		Endif
+
+		If !Empty(cTel)
+			cTel += AllTrim(SA2->A2_TEL)
+		Else
+			cTel := AllTrim(SA2->A2_TEL)
+		Endif
+
+		cXMLRet += 	'<ListOfCommunicationInformation>'
+		cXMLRet += 		'<CommunicationInformation>'
+		cXMLRet +=				'<POBox>' + SA2->A2_CX_POST + '</POBox>'
+		cXMLRet += 			'<Email>' + _NoTags(SA2->A2_EMAIL) + '</Email>'
+		cXMLRet +=     		'<PhoneNumber>' + cTel + '</PhoneNumber>'
+		cXMLRet +=     		'<FaxNumber>' +  AllTrim(SA2->A2_FAX) + '</FaxNumber>'
+		cXMLRet +=    		'<HomePage>' + _NoTags(SA2->A2_HPAGE) + '</HomePage>'
+		cXMLRet += 		'</CommunicationInformation>'
+		cXMLRet += 	'</ListOfCommunicationInformation>'
+
+		cXMLRet += 	'<ListOfContacts>'
+		cXMLRet +=          '<Contact>'
+		cXMLRet +=				'<Name>' + _NoTags(SA2->A2_CONTATO) + '</Name>'
+		cXMLRet +=	     '</Contact>'
+		cXMLRet += 	'</ListOfContacts>'
+
+		cXMLRet += '</BusinessContent>'
+
+	EndIf
+
+Return { lRet, cXMLRet }
+
+//-------------------------------------------------------------------------------------------------
+/*/{Protheus.doc} v2000
+
+Funcao de integracao com o adapter EAI para recebimento do cadastro de
+Fornecedor (SA2) utilizando o conceito de mensagem unica.
+
+@param   cXml          Vari·vel com conte˙do XML para envio/recebimento.
+@param   nTypeTrans    Tipo de transaÁ„o. (Envio/Recebimento)
+@param   cTypeMessage  Tipo de mensagem. (Business Type, WhoIs, etc)
+
+@author  Leandro Luiz da Cruz
+@version P11
+@since   26/11/2012
+@return  lRet - (boolean)  Indica o resultado da execuÁ„o da funÁ„o
+cXmlRet - (caracter) Mensagem XML para envio
+/*/
+//-------------------------------------------------------------------------------------------------
+Static Function v2000(cXML, nTypeTrans, cTypeMessage, oXml, cCodVer)
+	Local nCount           := 0
+	Local nX               := 0
+	Local cValGov          := 0
+	Local cError           := ""
+	Local cWarning         := ""
+	Local cMarca           := ""
+	Local cValInt          := ""
+	Local cValExt          := ""
+	Local cAlias           := "SA2"
+	Local cField           := "A2_COD"
+	Local cXmlRet          := ""
+	Local cType            := ""
+	Local cCode            := ""
+	Local cLoja            := ""
+	Local cDescrip         := ""
+	Local cBcoExt          := ""
+	Local cCdBco           := ""
+	Local cAgBco           := ""
+	Local cDgAgBco         := ""
+	Local cCCBco           := ""
+	Local cDgCCBco         := ""
+	Local cTipCCBco		   := ""
+	Local lRet             := .T.
+	Local lA2Pais		   := .F.
+	Local aRet             := {}
+	Local aVendor          := {}
+	Local aAux             := {}
+	Local aAreaSA6         := {}
+	Local lMktPlace        := SuperGetMv("MV_MKPLACE",.F.,.F.)
+	Local cBcoName         := ""
+	Local cLograd          := ""
+	Local cNumero          := ""
+	Local cDatAtu          := ""
+	Local cCodEst          := ""
+	Local cCodMun          := ""
+	Local cEvent           := ""
+	Local cCNPJCPF         := ""
+	Local cEst             := ""
+	Local cFILFil		   := FWxFilial("FIL")
+	Local aFILArea		   := {}
+	Local nAccounts		   := 0
+	Local cBanco 		   := ""
+	Local cAgencia 		   := ""
+	Local cConta 		   := ""
+	Local cDvAGencia       := ""
+	Local cDvConta		   := ""
+	Local cTpConta		   := ""
+	Local cMoeda		   := ""
+	Local cPrincipal	   := ""
+	Local cEndereco		   := ""
+	Local cTel			   := ""
+	Local aContasFIL 	   := {}
+	Local lHotel	   	   := SuperGetMV( "MV_INTHTL", , .F. )
+	Local cNatFor		   := ""
+	Local lIniPadCod       := .F.
+	Local cPais 	       := ""
+	Local cEst			   := ""
+	Local aRetPe		   := {}
+	Local lFornecPJ		   := .T.
+	Local lV2004		   := Val(cCodVer) >= 2004
+	Local dDtNasc		   := CtoD("//")
+
+	Private lMsErroAuto    := .F.
+	Private lAutoErrNoFile := .T.
+	Private lMsHelpAuto    := .T.
+	
+	If nTypeTrans == TRANS_RECEIVE
+		If cTypeMessage == EAI_MESSAGE_BUSINESS
+			If AllTrim(Upper(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Type:Text)) == "VENDOR" .Or. AllTrim(Upper(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Type:Text)) == "BOTH"
+				If AllTrim(Upper(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Type:Text)) == "BOTH"
+					cType := AllTrim(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Type:Text)
+
+					cXML  := StrTran(cXML, "<Type>" + cType + "</Type>", "<Type>CUSTOMER</Type>")
+
+					aAdd(aRet, FWIntegDef("MATA030", cTypeMessage, nTypeTrans, cXML))
+
+					If ValType(aRet) == "A"
+						If !Empty(aRet)
+							lRet := aRet[1][1]
+							cXmlRet := aRet[1][2]
+						EndIf
+					Endif
+				EndIf
+
+				// ObtÈm a marca
+				If Type("oXml:_TotvsMessage:_MessageInformation:_Product:_Name:Text") != "U" .And. !Empty(oXml:_TotvsMessage:_MessageInformation:_Product:_Name:Text)
+					cMarca :=  oXml:_TotvsMessage:_MessageInformation:_Product:_Name:Text
+				Else
+					lRet := .F.
+					cXmlRet := STR0010 // "Product È obrigatÛrio!"
+					Return {lRet, cXmlRet}
+				EndIf
+
+				// Verifica se a filial atual È a mesma filial de inclus„o do cadastro
+				aAux := IntChcEmp(oXML, cAlias, cMarca)
+				If !aAux[1]
+					lRet := aAux[1]
+					cXmlRet := aAux[2]
+					Return {lRet, cXmlRet}
+				EndIf
+
+				// ObtÈm o Valor externo
+				If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_InternalId:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_InternalId:Text)
+					cValExt := (oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_InternalId:Text)
+				Else
+					lRet := .F.
+					cXmlRet := STR0011 // "InternalId È obrigatÛrio!"
+					Return {lRet, cXmlRet}
+				EndIf
+
+				// ObtÈm o code
+				If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Code:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Code:Text)
+					cCode := oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Code:Text
+				Else
+	            	//Se for integraÁ„o com hotelaria, ir· gerar um cÛdigo sequencial ou considerar o inicializador padr„o do campo cÛdigo
+	        		If !lHotel
+	        			lRet := .F.
+	        			cXmlRet := STR0012 // "Code È obrigatÛrio!"
+	        			Return {lRet, cXmlRet}
+	        		Endif
+				EndIf
+
+				// ObtÈm a loja
+				If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StoreId:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StoreId:Text)
+					cLoja := oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StoreId:Text
+				EndIf
+
+				//ObtÈm o valor interno
+				aAux := IntForInt(cValExt, cMarca)
+
+				// Se o evento È Upsert
+				If Upper(oXml:_TOTVSMessage:_BusinessMessage:_BusinessEvent:_Event:Text) == "UPSERT"
+					// Se o registro existe
+					If aAux[1] .And. ITFINDREG(aAux[2,3],aAux[2,4])
+						nOpcx := 4 // Update
+					Else
+						nOpcx := 3 // Insert
+					EndIf
+					// Se o evento È Delete
+				ElseIf Upper(oXml:_TOTVSMessage:_BusinessMessage:_BusinessEvent:_Event:Text) == "DELETE"
+					// Se o registro existe
+					If aAux[1] .And. ITFINDREG(aAux[2,3],aAux[2,4])
+						nOpcx := 5 // Delete
+					Else
+						lRet := .F.
+						cXmlRet := STR0013 // "O registro a ser excluÌdo n„o existe na base Protheus!"
+						Return {lRet, cXmlRet}
+					EndIf
+				Else
+					lRet := .F.
+					cXmlRet := STR0014 // "O evento informado È inv·lido!"
+					Return {lRet, cXmlRet}
+				EndIf
+
+				// Se È Insert
+				If nOpcx == 3
+					// Se n„o h· inicializador padr„o
+					lIniPadCod := ! Empty(Posicione('SX3', 2, Padr('A2_COD', 10), 'X3_RELACAO'))
+					If ! lIniPadCod
+						//Se for integraÁ„o com hotelaria, gera um cÛdigo sequencial (pode ser alterada a lÛgica atravÈs de incializador padr„o)
+						If lHotel
+							cCode := ProxNum()
+						Endif
+
+						aAdd(aVendor, {"A2_COD", cCode, Nil}) // CÛdigo
+					EndIf
+
+					If Empty(Posicione('SX3', 2, Padr('A2_LOJA', 10), 'X3_RELACAO'))
+						//Se for integraÁ„o com hotelaria, fixa a loja como "00" (pode ser alterada a lÛgica atravÈs de incializador padr„o)
+						If lHotel
+							cLoja := "00"
+						Endif
+
+						aAdd(aVendor, {"A2_LOJA", cLoja, Nil}) // Loja
+					EndIf
+				Else
+					cValInt := IntForExt(, , aAux[2][3], aAux[2][4])[2]
+
+					cCode := PadR( aAux[2][3], TamSX3("A2_COD")[1] )
+					cLoja := PadR( aAux[2][4], TamSX3("A2_LOJA")[1] )
+
+					aAdd(aVendor, {"A2_COD", cCode, Nil}) // CÛdigo
+					aAdd(aVendor, {"A2_LOJA", cLoja, Nil}) // Loja
+				EndIf
+
+				// Se n„o for DELETE
+				If nOpcx != 5
+					// ObtÈm o Nome ou Raz„o Social
+					If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Name:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Name:Text)
+						aAdd(aVendor, {"A2_NOME", AllTrim(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Name:Text), Nil})
+					EndIf
+
+					// ObtÈm o Nome de Fantasia
+					If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ShortName:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ShortName:Text)
+						aAdd(aVendor, {"A2_NREDUZ", AllTrim(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ShortName:Text), Nil})
+					EndIf
+
+					// ObtÈm o Tipo do Fornecedor
+					If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_EntityType:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_EntityType:Text)
+						If Upper(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_EntityType:Text) == "PERSON"
+							aAdd(aVendor, {"A2_TIPO", "F", Nil})
+							lFornecPJ := .F.
+						ElseIf Upper(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_EntityType:Text) == "COMPANY"
+							aAdd(aVendor, {"A2_TIPO", "J", Nil})
+						EndIf
+					Else
+						aAdd(aVendor, {"A2_TIPO", "X", Nil})
+					EndIf
+					
+					// ObtÈm a data de nascimento
+					If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_PersonalInformation:_BirthDate:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_PersonalInformation:_BirthDate:Text)
+						dDtNasc := Ctod( SubStr( oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_PersonalInformation:_BirthDate:Text, 9, 2 ) + '/' + ;
+										 SubStr( oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_PersonalInformation:_BirthDate:Text, 6, 2 ) + '/' + ;
+										 SubStr( oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_PersonalInformation:_BirthDate:Text, 1, 4 ) )
+								
+						aAdd(aVendor, {"A2_DTNASC", dDtNasc, Nil})
+					EndIf
+
+					// ObtÈm o EndereÁo do Fornecedor
+					If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Address:Text") != "U" .And. !Empty(AllTrim(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Address:Text))
+						cEndereco := AllTrim(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Address:Text)
+
+						If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Number:Text") <> "U"
+							If !Empty(AllTrim(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Number:Text))
+								cEndereco += ", " + AllTrim(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Number:Text)
+								Aadd( aVendor, { "A2_NR_END", oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Number:Text, Nil }) //-- Campo numero utilizado apenas no EIC
+							Endif
+						Endif
+
+						cEndereco := AllTrim(Upper(cEndereco))
+
+						Aadd( aVendor, { "A2_END",cEndereco, Nil })
+					EndIf
+
+					// ObtÈm o Complemento do EndereÁo
+					If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Complement:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Complement:Text)
+						aAdd(aVendor, {"A2_COMPLEM", oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Complement:Text, Nil})
+					EndIf
+
+					// ObtÈm o Bairro do Fornecedor
+					If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_District:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_District:Text)
+						aAdd(aVendor, {"A2_BAIRRO", oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_District:Text, Nil})
+					EndIf
+
+					// ObtÈm a descriÁ„o do MunicÌpio do Fornecedor
+					If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_City:_CityDescription:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_City:_CityDescription:Text)
+						aAdd(aVendor, {"A2_MUN", oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_City:_CityDescription:Text, Nil})
+					EndIf
+
+					// ObtÈm o Cod EndereÁamento Postal
+					If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_ZIPCode:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_ZIPCode:Text)
+						aAdd(aVendor, {"A2_CEP", oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_ZIPCode:Text, Nil})
+					EndIf
+
+					//Tabela Pais
+					DbSelectArea("SYA")
+
+					//ObtÈm o Pais do Fornecedor pelo cÛdigo
+					If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Country:_CountryCode:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Country:_CountryCode:Text)
+						cPais := AllTrim(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Country:_CountryCode:Text)
+						cPais := PadR( cPais, TamSX3("A2_PAIS")[1] )
+
+						SYA->(DbSetOrder(1))
+						If SYA->(DbSeek(xFilial("SYA") + cPais))
+							lA2Pais := .T.
+						Endif
+
+						If lA2Pais
+							Aadd( aVendor, { "A2_PAIS",cPais, Nil })
+						Else
+							If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Country:_CountryDescription:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Country:_CountryDescription:Text)
+								cPais := AllTrim(Upper(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Country:_CountryDescription:Text))
+
+								cCodPais := PadR(Posicione("SYA",2,xFilial("SYA") + PadR(cPais,TamSx3("YA_DESCR")[1]),"YA_CODGI"),TamSx3("A2_PAIS")[1])
+
+								If !Empty(cCodPais)
+									If cCodPais <> A2030PALOC("SA2",1)
+										cEst := "EX"
+									Endif
+									Aadd( aVendor, { "A2_PAIS",cCodPais, Nil })
+								Else
+									If cPais <> A2030PALOC("SA2",2)
+										cEst := "EX"
+									Endif
+								Endif
+								SYA->(DbSetOrder(1))
+							Endif
+						Endif
+					Else
+						//ObtÈm o Pais do Fornecedor pela descriÁ„o
+						If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Country:_CountryDescription:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Country:_CountryDescription:Text)
+							cPais := AllTrim(Upper(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_Country:_CountryDescription:Text))
+
+							cCodPais := PadR(Posicione("SYA",2,xFilial("SYA") + PadR(cPais,TamSx3("YA_DESCR")[1]),"YA_CODGI"),TamSx3("A2_PAIS")[1])
+
+							If !Empty(cCodPais)
+								If cCodPais <> A2030PALOC("SA2",1)
+									cEst := "EX"
+								Endif
+
+								Aadd( aVendor, { "A2_PAIS",cCodPais, Nil })
+							Else
+								If cPais <> A2030PALOC("SA2",2)
+									cEst := "EX"
+								Endif
+							Endif
+
+							SYA->(DbSetOrder(1))
+						Endif
+					Endif
+
+					// ObtÈm a Sigla da FederaÁ„o
+					If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_State:_StateCode:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_State:_StateCode:Text)
+						If Empty(cEst)
+							cEst := AllTrim(Upper(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_State:_StateCode:Text))
+						Endif
+						aAdd(aVendor, {"A2_EST", cEst, Nil})
+					EndIf
+
+					// ObtÈm o CÛdigo do MunicÌpio
+					If cEst <> "EX" .And. Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_City:_CityCode:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_City:_CityCode:Text)
+						aAdd(aVendor, {"A2_COD_MUN", Right(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Address:_City:_CityCode:Text, 5), Nil})
+					EndIf
+
+					// ObtÈm InscriÁ„o Estadual/InscriÁ„o Municipal/CNPJ/CPF do Fornecedor
+					If Type("oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID") != "U" .And. !Empty(oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID)
+						If Type("oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID") != "A"
+							XmlNode2Arr(oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID, "_ID")
+						EndIf
+
+						For nX := 1 To Len(oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID)
+							cValGov := oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID[nX]:TEXT
+
+							If AllTrim(Upper(oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID[nX]:_NAME:TEXT)) == 'INSCRICAO ESTADUAL'
+								aAdd(aVendor, {"A2_INSCR", cValGov,  Nil})
+							ElseIf AllTrim(Upper(oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID[nX]:_NAME:TEXT ) ) == 'INSCRICAO MUNICIPAL'
+								aAdd(aVendor, {"A2_INSCRM", cValGov,  Nil})
+							ElseIf AllTrim(Upper(oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID[nX]:_NAME:TEXT ) )  $ 'CPF/CNPJ'
+								aAdd(aVendor, {"A2_CGC", cValGov,  Nil})
+							ElseIf AllTrim(Upper(oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_GOVERNMENTALINFORMATION:_ID[nX]:_NAME:TEXT ) )  $ 'INSCRICAO PIS'
+								cPISSRA := cValGov //Indica que funcionario e autonomo
+							EndIf
+						Next nX
+					EndIf
+					
+					// ObtÈm Simples Nacional/TributaÁ„o PIS/TributaÁ„o COFINS
+					If Type("oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_FISCALINFORMATION") != "U"
+						If Type("oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_FISCALINFORMATION:_TAXPAYER") != "U" .And. !Empty(oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_FISCALINFORMATION:_TAXPAYER)
+							If Type("oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_FISCALINFORMATION:_TAXPAYER") != "A"
+								XmlNode2Arr(oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_FISCALINFORMATION:_TAXPAYER, "_TAXPAYER")
+							EndIf
+	
+							For nX := 1 To Len(oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_FISCALINFORMATION:_TAXPAYER)
+								cFisInf := Iif(AllTrim(Upper(oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_FISCALINFORMATION:_TAXPAYER[nX]:_ISPAYER:TEXT))=="TRUE","1","2")
+	
+								If AllTrim(Upper(oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_FISCALINFORMATION:_TAXPAYER[nX]:_TAXNAME:TEXT)) == 'TRIBUTACAO PIS'
+									aAdd(aVendor, {"A2_RECPIS", cFisInf,  Nil})
+								ElseIf AllTrim(Upper(oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_FISCALINFORMATION:_TAXPAYER[nX]:_TAXNAME:TEXT ) ) == 'TRIBUTACAO COFINS'
+									aAdd(aVendor, {"A2_RECCOFI", cFisInf,  Nil})
+								EndIf
+							Next nX
+						EndIf
+						
+						If Type("oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_FISCALINFORMATION:_ISSIMPLESADOPTER:TEXT") != "U" .And. !Empty(oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_FISCALINFORMATION:_ISSIMPLESADOPTER:TEXT)
+							cSimpNac := Iif(AllTrim(oXML:_TOTVSMESSAGE:_BUSINESSMESSAGE:_BUSINESSCONTENT:_FISCALINFORMATION:_ISSIMPLESADOPTER:TEXT)=="TRUE","1","2")
+	
+							aAdd(aVendor, {"A2_SIMPNAC", cSimpNac,  Nil}) 
+						EndIf
+					EndIf
+					
+					// ObtÈm a Caixa Postal
+					If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ShippingAddress:_POBox:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ShippingAddress:_POBox:Text)
+						aAdd(aVendor, {"A2_CX_POST", oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ShippingAddress:_POBox:Text, Nil})
+					EndIf
+
+					// ObtÈm o E-Mail
+					If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_Email:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_Email:Text)
+						aAdd(aVendor, {"A2_EMAIL", oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_Email:Text, Nil})
+					EndIf
+
+					// ObtÈm o N˙mero do Telefone
+					If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_PhoneNumber:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_PhoneNumber:Text)
+						cStringTemp:=RemCharEsp(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_PhoneNumber:Text)
+						aTelefone := RemDddTel(cStringTemp)
+						aAdd(aVendor, {"A2_TEL",aTelefone[1], Nil})
+						If !Empty(aTelefone[2])
+							If Len(AllTrim(aTelefone[2])) == 2
+								aTelefone[2] := "0" + aTelefone[2]
+							Endif
+							aAdd(aVendor, {"A2_DDD",aTelefone[2], Nil})
+						EndIf
+						If !Empty(aTelefone[3])
+							aAdd(aVendor, {"A2_DDI",aTelefone[3], Nil})
+						EndIf
+					EndIf
+
+					// ObtÈm o N˙mero do Fax do Fornec.
+					If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_FaxNumber:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_FaxNumber:Text)
+						cStringTemp:=RemCharEsp(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_FaxNumber:Text)
+						aTelefone := RemDddTel(cStringTemp)
+						aAdd(aVendor, {"A2_FAX", aTelefone[1], Nil})
+					EndIf
+
+					// ObtÈm a Home-Page
+					If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_HomePage:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_HomePage:Text)
+						aAdd(aVendor, {"A2_HPAGE", oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCommunicationInformation:_CommunicationInformation:_HomePage:Text,   Nil})
+					EndIf
+
+					// ObtÈm o Contato na Empresa
+					If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfContacts:_Contact:_ContactInformationName:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfContacts:_Contact:_ContactInformationName:Text)
+						aAdd(aVendor, {"A2_CONTATO", oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfContacts:_Contact:_ContactInformationName:Text, Nil})
+					EndIf
+
+					// ObtÈm Bloqueia o Fornecedor?
+					If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_RegisterSituation:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_RegisterSituation:Text)
+						If Upper(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_RegisterSituation:Text) == 'ACTIVE' .And. !lMktPlace
+							aAdd(aVendor, {"A2_MSBLQL", "2",  Nil})
+						Else
+							aAdd(aVendor, {"A2_MSBLQL", "1",  Nil})
+						EndIf
+					Else
+						aAdd(aVendor, {"A2_MSBLQL", "1",  Nil})
+					EndIf
+
+					// Banco/Cod AgÍncia/Cta Corrente
+					If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation:_BankInternalId:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation:_BankInternalId:Text)
+						cBcoExt := oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation:_BankInternalId:Text
+						aAux := M70GetInt(cBcoExt, cMarca)
+
+						If aAux[1]
+							cCdBco := PadR(aAux[2][3], TamSX3("A2_BANCO")[1])
+							cAgBco := PadR(aAux[2][4], TamSX3("A2_AGENCIA")[1])
+							cCCBco := PadR(aAux[2][5], TamSX3("A2_NUMCON")[1])
+
+							dbSelectArea("SA6")
+							aAreaSA6 := SA6->(GetArea())
+							dbSetOrder(1)
+
+							aAdd(aVendor, {"A2_BANCO",   cCdBco, Nil})
+							aAdd(aVendor, {"A2_AGENCIA", cAgBco, Nil})
+							cDgAgBco := Posicione("SA6", 1, PadR(aAux[2][2], TamSX3("A6_FILIAL")[1]) + cCdBco + cAgBco + cCCBco, "A6_DVAGE")
+							aAdd(aVendor, {"A2_DVAGE", cDgAgBco, Nil})
+							aAdd(aVendor, {"A2_NUMCON",  cCCBco, Nil})
+							cDgCCBco := Posicione("SA6", 1, PadR(aAux[2][2], TamSX3("A6_FILIAL")[1]) + cCdBco + cAgBco + cCCBco, "A6_DVCTA")
+							aAdd(aVendor, {"A2_DVCTA", cDgCCBco, Nil})
+
+							RestArea(aAreaSA6)
+						Else
+							lRet := .F.
+							cXmlRet := STR0015 + " -> " + cBcoExt // "O banco informado n„o foi encontrado no cadastro do Protheus"
+							Return {lRet, cXmlRet}
+						EndIf
+					Else
+						// Banco
+						If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation:_BankCode:Text") != "U"
+							cCdBco := oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation:_BankCode:Text
+							aAdd(aVendor, {"A2_BANCO", cCdBco, Nil})
+						EndIf
+
+						// AgÍncia
+						If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation:_BranchCode:Text") != "U"
+							cAgBco := oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation:_BranchCode:Text
+							aAdd(aVendor, {"A2_AGENCIA", cAgBco, Nil})
+						EndIf
+
+						// DÌgito AgÍncia
+						If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation:_BranchKey:Text") != "U"
+							cDgAgBco := oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation:_BranchKey:Text
+							aAdd(aVendor, {"A2_DVAGE", cDgAgBco, Nil})
+						EndIf
+
+						// Cta Corrente
+						If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation:_CheckingAccountNumber:Text") != "U"
+							cCCBco := oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation:_CheckingAccountNumber:Text
+							aAdd(aVendor, {"A2_NUMCON", cCCBco, Nil})
+						EndIf
+
+						// DÌgito Conta Corrente
+						If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation:_CheckingAccountNumberKey:Text") != "U"
+							cDgCCBco := oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation:_CheckingAccountNumberKey:Text
+							aAdd(aVendor, {"A2_DVCTA", cDgCCBco, Nil})
+						EndIf
+
+						If lV2004
+							// Tipo da Conta
+							If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation:_CheckingAccountType:Text") != "U"
+								cTpConta := oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation:_CheckingAccountType:Text
+								Aadd(aVendor, {"A2_TIPCTA", cTpConta, Nil})
+							EndIf
+						EndIf
+
+						//Pega a lista de contas do fornecedor
+						If Type("oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation") == 'A'
+							For nAccounts := 1 To Len(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation)
+								If XmlChildEx(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation[nAccounts],"_MAINACCOUNT") <> Nil
+									cBanco 	:= oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation[nAccounts]:_BankCode:Text
+									cAgencia 	:= oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation[nAccounts]:_BranchCode:Text
+									cConta 	:= oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation[nAccounts]:_CheckingAccountNumber:Text
+									cDvAGencia	:= oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation[nAccounts]:_BranchKey:Text
+									cDvConta 	:= oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation[nAccounts]:_CheckingAccountNumberKey:Text
+									cTpConta 	:= oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation[nAccounts]:_CheckingAccountType:Text
+									cMoeda 	:= oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation[nAccounts]:_CurrencyAccount:Text
+									cPrincipal	:= oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfBankingInformation:_BankingInformation[nAccounts]:_MainAccount:Text
+
+									//Adiciona os dados da conta em um vetor, para gravar na FIL apÛs a inclus„o do fornecedor pela ExecAuto
+									aAdd( aContasFIL, {cBanco, cAgencia, cDvAGencia, cConta, cDvConta, cTpConta, cMoeda, cPrincipal} )
+
+									//Caso seja conta principal, atualiza os dados banc·rios na SA2
+									If cPrincipal	== "1"
+										aAdd( aVendor,{"A2_BANCO", cBanco , Nil} )
+										aAdd( aVendor,{"A2_AGENCIA", cAgencia, Nil} )
+										aAdd( aVendor, {"A2_DVAGE", cDvAGencia, Nil} )
+										aAdd( aVendor, {"A2_NUMCON", cConta, Nil} )
+										aAdd( aVendor, {"A2_DVCTA", cDvConta, Nil} )
+										aAdd( aVendor,{'A2_TIPCTA', cTpConta, Nil} )
+									EndIf
+								EndIf
+							Next nAccounts
+						EndIf
+					EndIf
+
+					//Se for integraÁ„o com hotelaria, define o campo de natureza do fornecedor de acordo com o par‚metro MV_HTLNAPF ou MV_HTLNAPJ (essa natureza ser· utilizada no tÌtulo de comiss„o a pagar)
+					If lHotel
+						//Se o fornecedor for PJ, pega a natureza do par‚metro MV_HTLNAPJ. Do contr·rio, lÍ o par‚metro MV_HTLNAPF.
+						If lFornecPJ
+							cNatFor := SuperGetMV( "MV_HTLNAPJ", , "" )
+						Else
+							cNatFor := SuperGetMV( "MV_HTLNAPF", , "" )
+						Endif
+
+						If ! Empty( cNatFor )
+							aAdd(aVendor, {"A2_NATUREZ", cNatFor, Nil})
+						Endif
+					EndIf
+
+				EndIf
+
+				//Ponto de entrada para incluir campos no array aVendor
+				If ExistBlock("MTI020NOM")
+					aRetPe := ExecBlock("MTI020NOM",.F.,.F.,{aVendor,oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Name:Text})
+					If ValType(aRetPe) == "A" .And. Len(aRetPe) >0
+						If ValType(aRetPe) == "A"
+							aVendor := aClone(aRetPe)
+						EndIf
+					EndIf
+				EndIf
+
+				BEGIN TRANSACTION
+					//Ordena Array conforme dicionario de dados
+					aVendor := OrdenaArray(aVendor)
+
+					// Executa Rotina Autom·tica conforme evento
+					MSExecAuto({|x, y| MATA020(x, y)}, aVendor, nOpcx)
+
+					// Se a Rotina Autom·tica retornou erro
+					If lMsErroAuto
+						// ObtÈm o log de erros
+						aErroAuto := GetAutoGRLog()
+
+						// Varre o array obtendo os erros em UTF-8 e quebrando a linha
+						cXmlRet := "<![CDATA["
+						For nCount := 1 to Len(aErroAuto)
+							cXmlRet += _NoTags(aErroAuto[nCount])
+						Next nCount
+						cXmlRet += "]]>"
+
+						lRet := .F.
+
+						//Cancela a utilizaÁ„o do cÛdigo sequencial
+						If lHotel .AND. ! lIniPadCod
+							RollBackSX8()
+						Endif
+
+						DisarmTransaction()
+						MsUnLockAll()
+					Else
+						//Grava as informaÁıes da FIL (Bancos x Fornec)
+						If Len( aContasFIL ) > 0
+							lRet := M020FILGrv( cFILFil, cCode, cLoja, aContasFIL )
+							If !lRet
+								cXmlRet := OemToAnsi(STR0030) //"Erro na gravaÁ„o da(s) conta(s) do fornecedor (FIL)."
+								DisarmTransaction()
+								MsUnLockAll()
+							Endif
+						Endif
+
+						If lRet
+							cValSRAInt := GPEI090NRcv( CFGA070INT( cMarca, "SRA", "RA_MAT", cValExt ), { "RA_FILIAL", "RA_MAT" } )
+
+							If (!Empty(cPISSRA) .AND. (nOpcx == 3 .OR. nOpcx == 4) ) .OR. !Empty(cValSRAInt)
+								Gp265GrvFun(nOpcX, cPISSRA, cMarca, cCampo, cValExt, cAlias, cValSRAInt)
+							EndIf
+
+							// CRUD do XXF (de/para)
+							If nOpcx == 3 // Insert
+								cValInt := IntForExt(, , SA2->A2_COD, SA2->A2_LOJA)[2]
+								CFGA070Mnt(cMarca, cAlias, cField, cValExt, cValInt, .F.)
+
+								//Confirma a utilizaÁ„o do cÛdigo sequencial
+								If lHotel .AND. ! lIniPadCod
+									ConfirmSX8()
+								Endif
+							ElseIf nOpcx == 4 // Update
+								CFGA070Mnt(cMarca, cAlias, cField, cValExt, cValInt, .F.)
+							Else  // Delete
+								CFGA070Mnt(cMarca, cAlias, cField, cValExt, cValInt, .T.)
+							EndIf
+
+							// Monta o XML de Retorno
+							cXmlRet := "<ListOfInternalId>"
+							cXmlRet +=    "<InternalId>"
+							cXmlRet +=       "<Name>CustomerVendor</Name>"
+							cXmlRet +=       "<Origin>" + cValExt + "</Origin>"
+							cXmlRet +=       "<Destination>" + cValInt + "</Destination>"
+							cXmlRet +=    "</InternalId>"
+							If nOpcx != 5 .And. !Empty(cCdBco)
+								cXmlRet += "<InternalId>"
+								cXmlRet +=    "<Name>Bank</Name>"
+								cXmlRet +=    "<Origin>" + cBcoExt + "</Origin>"
+								cXmlRet +=    "<Destination>" + M70MontInt(xFilial('SA6'), cCdBco, cAgBco, cCCBco) + "</Destination>"
+								cXmlRet += "</InternalId>"
+							EndIf
+							cXmlRet += "</ListOfInternalId>"
+						Endif
+
+					EndIf
+
+				END TRANSACTION
+
+			ElseIf AllTrim(Upper(oXML:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Type:Text)) == "CUSTOMER"
+				aRet := FWIntegDef("MATA030", cTypeMessage, nTypeTrans, cXml)
+
+				If ValType(aRet) == "A"
+					If !Empty(aRet)
+						lRet := aRet[1]
+						cXmlRet := aRet[2]
+					EndIf
+				Endif
+			EndIf
+		ElseIf cTypeMessage == EAI_MESSAGE_RESPONSE
+			// Se n„o houve erros na resposta
+			If Upper(oXML:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_Status:Text) == "OK"
+				// Verifica se a marca foi informada
+				If Type("oXML:_TOTVSMessage:_MessageInformation:_Product:_name:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_MessageInformation:_Product:_name:Text)
+					cProduct := oXml:_TOTVSMessage:_MessageInformation:_Product:_name:Text
+				Else
+					lRet    := .F.
+					cXmlRet := STR0016 // "Erro no retorno. O Product È obrigatÛrio!"
+					Return {lRet, cXmlRet}
+				EndIf
+
+				If Type("oXML:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ListOfInternalId:_InternalId") <> "U"
+					// Se n„o for array
+					If Type("oXML:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ListOfInternalId:_InternalId") != "A"
+						// Transforma em array
+						XmlNode2Arr(oXML:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ListOfInternalId:_InternalId, "_InternalId")
+					EndIf
+
+					// Verifica se o cÛdigo interno foi informado
+					If Type("oXML:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ListOfInternalId:_InternalId[1]:_Origin:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ListOfInternalId:_InternalId[1]:_Origin:Text)
+						cValInt := oXML:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ListOfInternalId:_InternalId[1]:_Origin:Text
+					Else
+						lRet    := .F.
+						cXmlRet := STR0017 // "Erro no retorno. O OriginalInternalId È obrigatÛrio!"
+						Return {lRet, cXmlRet}
+					EndIf
+
+					// Verifica se o cÛdigo externo foi informado
+					If Type("oXML:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ListOfInternalId:_InternalId[1]:_Destination:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ListOfInternalId:_InternalId[1]:_Destination:Text)
+						cValExt := oXML:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ListOfInternalId:_InternalId[1]:_Destination:Text
+					Else
+						lRet    := .F.
+						cXmlRet := STR0018 // "Erro no retorno. O DestinationInternalId È obrigatÛrio"
+						Return {lRet, cXmlRet}
+					EndIf
+					
+					//Valida valor interno para saber se trata de um fornecedor ou cliente.
+            		aAux := Separa(cValInt,"|")
+            		If Len(aAux) == 5
+            			If AllTrim(Upper(aAux[5])) == "C"
+            				cAlias := "SA1"
+            				cField := "A1_COD"
+            			Endif
+            		Endif
+	            		
+					If Type("oXML:_TOTVSMessage:_ResponseMessage:_ReceivedMessage:_Event:Text") <> "U" .And. !Empty(oXML:_TOTVSMessage:_ResponseMessage:_ReceivedMessage:_Event:Text)
+	            		If Upper(oXML:_TOTVSMessage:_ResponseMessage:_ReceivedMessage:_Event:Text) == "UPSERT"
+	            			CFGA070Mnt(cProduct, cAlias, cField, cValExt, cValInt, .F.)
+	            		Elseif Upper(oXML:_TOTVSMessage:_ResponseMessage:_ReceivedMessage:_Event:Text) == "DELETE"
+	            			CFGA070Mnt(cProduct, cAlias, cField, cValExt, cValInt, .T.)
+	            		Endif
+	            	Else
+						// Insere / Atualiza o registro na tabela XXF (de/para)
+						CFGA070Mnt(cProduct, cAlias, cField, cValExt, cValInt, .F.)
+					Endif
+				EndIf
+			Else
+				// Se n„o for array
+				If Type("oXML:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_ListOfMessages:_Message") != "A"
+					// Transforma em array
+					XmlNode2Arr(oXML:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_ListOfMessages:_Message, "_Message")
+				EndIf
+
+				// Percorre o array para obter os erros gerados
+				For nCount := 1 To Len(oXML:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_ListOfMessages:_Message)
+					cError := oXML:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_ListOfMessages:_Message[nCount]:Text + CRLF
+				Next nCount
+
+				lRet := .F.
+				cXmlRet := cError
+			EndIf
+		ElseIf cTypeMessage == EAI_MESSAGE_WHOIS
+			cXmlRet := "1.000|2.000|2.001|2.002|2.003|2.004|2.005"
+		EndIf
+	ElseIf nTypeTrans == TRANS_SEND
+		oModelSA2 := FWModelActive() //Modelo Ativo da SA2
+		If oModelSA2:GetOperation() == MODEL_OPERATION_DELETE
+			cEvent := "delete"
+			CFGA070Mnt("PROTHEUS","SA2","A2_COD",,IntForExt(, , SA2->A2_COD, SA2->A2_LOJA)[2],.T.)
+		Else
+			cEvent := "upsert"
+		EndIf
+
+		// ObtÈm o nome do Banco
+		cBcoName := BankName(SA2->A2_BANCO, SA2->A2_AGENCIA, SA2->A2_NUMCON)
+
+		// Trata endereÁo separando Logradouro e N˙mero
+		cLograd := trataEnd(SA2->A2_END, "L")
+		cNumero := trataEnd(SA2->A2_END, "N")
+
+		//-- Retorna o codigo do estado a partir da sigla
+		cCodEst  := Tms120CdUf(SA2->A2_EST, '1')
+
+		//-- Envio do codigo de acordo com padrao IBGE (cod. estado + cod. municipio)
+		If !Empty(SA2->A2_COD_MUN)
+			cCodMun := Rtrim(cCodEst) + Rtrim(SA2->A2_COD_MUN)
+		Endif
+
+		cXMLRet := '<BusinessEvent>'
+		cXMLRet +=     '<Entity>CustomerVendor</Entity>'
+		cXMLRet +=     '<Event>' + cEvent + '</Event>'
+		cXMLRet +=     '<Identification>'
+		cXMLRet +=         '<key name="InternalId">' + IntForExt(, , SA2->A2_COD, SA2->A2_LOJA)[2] + '</key>'
+		cXMLRet +=     '</Identification>'
+		cXMLRet += '</BusinessEvent>'
+
+		cXMLRet += '<BusinessContent>'
+		cXMLRet +=    '<CompanyId>' + Rtrim(cEmpAnt) + '</CompanyId>'
+		cXMLRet +=    '<BranchId>' + Rtrim(cFilAnt) + '</BranchId>'
+		cXMLRet +=    '<CompanyInternalId>' + Rtrim(cEmpAnt) + '|' + Rtrim(cFilAnt) + '</CompanyInternalId>'
+		cXMLRet +=    '<Code>' + Rtrim(SA2->A2_COD) + '</Code>'
+		cXMLRet +=    '<StoreId>' + Rtrim(SA2->A2_LOJA) + '</StoreId>'
+		cXMLRet +=    '<InternalId>' + IntForExt(, , SA2->A2_COD, SA2->A2_LOJA)[2] + '</InternalId>'
+		cXMLRet +=    '<ShortName>' + _NoTags(AllTrim(SA2->A2_NREDUZ)) + '</ShortName>'
+		cXMLRet +=    '<Name>' + _NoTags(AllTrim(SA2->A2_NOME)) + '</Name>'
+		cXMLRet +=    '<Type>' + 'Vendor' + '</Type>'
+
+		If SA2->A2_TIPO == 'F'
+			cXMLRet +=    '<EntityType>' + 'Person' + '</EntityType>'
+			cCNPJCPF   := 'CPF'
+		Else
+			cXMLRet +=    '<EntityType>' + 'Company' + '</EntityType>'
+			cCNPJCPF   := 'CNPJ'
+		EndIf
+
+		If SA2->A2_MSBLQL == '1'
+			cXMLRet +=    '<RegisterSituation>' + "Inactive" + '</RegisterSituation>'
+		Else
+			cXMLRet +=    '<RegisterSituation>' + "Active" + '</RegisterSituation>'
+		EndIf
+
+		If !Empty(SA2->A2_INSCR) .Or. !Empty(SA2->A2_INSCRM) .Or. !Empty(SA2->A2_CGC)
+			cXMLRet +=    '<GovernmentalInformation>'
+			cXMLRet +=       IIf(!Empty(SA2->A2_INSCR), '<Id name="INSCRICAO ESTADUAL" scope="State">' + Rtrim(SA2->A2_INSCR) + '</Id>', '')
+			cXMLRet +=       IIf(!Empty(SA2->A2_INSCRM), '<Id name="INSCRICAO MUNICIPAL" scope="Municipal">' + Rtrim(SA2->A2_INSCRM) + '</Id>', '')
+			cXMLRet +=       IIf(!Empty(SA2->A2_CGC), '<Id name="' + cCNPJCPF + '" scope="Federal">' + Rtrim(SA2->A2_CGC) + '</Id>', '')
+			cXMLRet +=    '</GovernmentalInformation>'
+		EndIf
+		cXMLRet +=    '<Address>'
+		cXMLRet +=       '<Address>' + _NoTags(Rtrim(cLograd)) + '</Address>'
+		cXMLRet +=       '<Number>' + Rtrim(cNumero) + '</Number>'
+		cXMLRet +=       '<Complement>' + Iif(Empty(SA2->A2_COMPLEM),_NoTags(trataEnd(SA2->A2_END, "C")),_NoTags(Rtrim(SA2->A2_COMPLEM))) + '</Complement>'
+		If !Empty(SA2->A2_COD_MUN) .Or. !Empty(SA2->A2_MUN)
+			cXMLRet +=    '<City>'
+			If !Empty(cCodMun)
+				cXMLRet +=    '<CityCode>' + RTrim(cCodMun) + '</CityCode>'
+				cXMLRet +=    '<CityInternalId>' + RTrim(cCodMun) + '</CityInternalId>'
+			Else
+				cXMLRet +=    '<CityCode/>'
+				cXMLRet +=    '<CityInternalId/>'
+			EndIf
+			cXMLRet +=       '<CityDescription>' + _NoTags(Rtrim(SA2->A2_MUN)) + '</CityDescription>'
+			cXMLRet +=    '</City>'
+		EndIf
+		cXMLRet +=       '<District>' + _NoTags(Rtrim(SA2->A2_BAIRRO)) + '</District>'
+		If !Empty(SA2->A2_EST)
+			cXMLRet +=    '<State>'
+			cXMLRet +=       '<StateCode>' + RTrim(SA2->A2_EST) + '</StateCode>'
+			cXMLRet +=       '<StateInternalId>' + RTrim(SA2->A2_EST) + '</StateInternalId>'
+			cXMLRet +=       '<StateDescription>' + _NoTags(Rtrim(Posicione("SX5",1, xFilial("SX5") + "12" + SA2->A2_EST, "X5DESCRI()" ))) + '</StateDescription>'
+			cXMLRet +=    '</State>'
+		EndIf
+		If !Empty(SA2->A2_PAIS)
+			cXMLRet +=    '<Country>'
+			cXMLRet +=       '<CountryCode>' + Rtrim(SA2->A2_PAIS) + '</CountryCode>'
+			cXMLRet +=       '<CountryInternalId>' + Rtrim(SA2->A2_PAIS) + '</CountryInternalId>'
+			cXMLRet +=    '</Country>'
+		EndIf
+		cXMLRet +=       '<ZIPCode>' + Rtrim(SA2->A2_CEP) + '</ZIPCode>'
+		cXMLRet +=       '<POBox>' + Rtrim(SA2->A2_CX_POST) + '</POBox>'
+		cXMLRet +=    '</Address>'
+		
+		cXMLRet +=    '<PersonalInformation>'
+		cXMLRet +=       '<BirthDate>' + INTDTANO(SA2->A2_DTNASC) + '</BirthDate>'
+		cXMLRet +=    '</PersonalInformation>'
+		
+		cXMLRet +=    '<FiscalInformation>'
+		cXMLRet +=       '<IsSimplesAdopter>' + Iif(SA2->A2_SIMPNAC=="1","True","False") + '</IsSimplesAdopter>' 
+		cXMLRet +=       '<TaxPayer TaxName="Tributacao PIS" isPayer="' + Iif(SA2->A2_RECPIS=="1","True","False") + '"/>
+		cXMLRet +=       '<TaxPayer TaxName="Tributacao COFINS" isPayer="' + Iif(SA2->A2_RECCOFI=="1","True","False") + '"/>'
+		cXMLRet +=    '</FiscalInformation>'
+		
+		If !Empty(SA2->A2_TEL) .Or. !Empty(SA2->A2_FAX) .Or. !Empty(SA2->A2_HPAGE) .Or. !Empty(SA2->A2_EMAIL)
+			If !Empty(SA2->A2_DDI)
+				cTel := RTrim(SA2->A2_DDI)
+			Endif
+
+			If !Empty(SA2->A2_DDD)
+				If !Empty(cTel)
+					cTel += RTrim(SA2->A2_DDD)
+				Else
+					cTel := RTrim(SA2->A2_DDD)
+				Endif
+			Endif
+
+			If !Empty(cTel)
+				cTel += RTrim(SA2->A2_TEL)
+			Else
+				cTel := RTrim(SA2->A2_TEL)
+			Endif
+
+			cXMLRet +=    '<ListOfCommunicationInformation>'
+			cXMLRet +=       '<CommunicationInformation>'
+			cXMLRet +=          '<PhoneNumber>' + cTel + '</PhoneNumber>'
+			cXMLRet +=          '<FaxNumber>' +  Rtrim(SA2->A2_FAX) + '</FaxNumber>'
+			cXMLRet +=          '<HomePage>' + _NoTags(Rtrim(SA2->A2_HPAGE)) + '</HomePage>'
+			cXMLRet +=          '<Email>' + _NoTags(Rtrim(SA2->A2_EMAIL)) + '</Email>'
+			cXMLRet +=       '</CommunicationInformation>'
+			cXMLRet +=    '</ListOfCommunicationInformation>'
+		EndIf
+
+		If !Empty(SA2->A2_CONTATO)
+			cXMLRet += '<ListOfContacts>'
+			cXMLRet +=    '<Contact>'
+			cXMLRet +=       '<ContactInformationName>' + _NoTags(Rtrim(SA2->A2_CONTATO)) + '</ContactInformationName>'
+			cXMLRet +=    '</Contact>'
+			cXMLRet += '</ListOfContacts>'
+		EndIf
+
+		If !Empty(SA2->A2_BANCO)
+			cXmlRet += '<ListOfBankingInformation>'
+			cXmlRet +=    '<BankingInformation>'
+			cXmlRet +=       '<BankCode>' + Rtrim(SA2->A2_BANCO) + '</BankCode>'
+			cXMLRet +=       '<BankInternalId>' + M70MontInt(xFilial('SA6'), SA2->A2_BANCO, SA2->A2_AGENCIA, SA2->A2_NUMCON) + '</BankInternalId>'
+			cXMLRet +=       '<BankName>' + _NoTags(Rtrim(cBcoName)) + '</BankName>'
+			cXMLRet +=       '<BranchCode>' + RTrim(SA2->A2_AGENCIA) + '</BranchCode>'
+			cXMLRet +=      '<BranchKey>' + RTrim(SA2->A2_DVAGE) + '</BranchKey>'
+			cXMLRet +=     	  '<CheckingAccountNumber>' + RTrim(SA2->A2_NUMCON) + '</CheckingAccountNumber>'
+			cXMLRet +=      '<CheckingAccountNumberKey>' + RTrim(SA2->A2_DVCTA) + '</CheckingAccountNumberKey>'
+			If lV2004
+				cXMLRet +=       '<CheckingAccountType>' + RTrim(SA2->A2_TIPCTA) + '</CheckingAccountType>'
+				cXMLRet += 	     '<MainAccount>1</MainAccount>'
+				cXMLRet += 	     '<CurrencyAccount>01</CurrencyAccount>'
+			EndIf
+			cXmlRet +=     '</BankingInformation>'
+
+			If lV2004
+				DbSelectArea("FIL")
+				aFILArea	:= FIL->(GetArea())
+				If FIL->(DbSeek( cFILFil + SA2->A2_COD + SA2->A2_LOJA ))
+					While FIL->(!Eof() .AND. cFILFil + SA2->A2_COD + SA2->A2_LOJA == FIL->FIL_FILIAL + FIL->FIL_FORNEC + FIL->FIL_LOJA)
+						If RTrim(FIL->FIL_TIPO) <> "1" //Se n„o for a conta principal, pois a mesma j· foi considerada acima
+							cXmlRet += '<BankingInformation>'
+							cXmlRet += '<BankCode>'						+ Rtrim(FIL->FIL_BANCO)					+ '</BankCode>'
+							cXMLRet += '<BranchCode>'					+ RTrim(FIL->FIL_AGENCI)					+ '</BranchCode>'
+							cXMLRet += '<BranchKey>'					+ RTrim(FIL->FIL_DVAGE)					+ '</BranchKey>'
+							cXMLRet += '<CheckingAccountNumber>'		+ RTrim(FIL->FIL_CONTA)					+ '</CheckingAccountNumber>'
+							cXMLRet += '<CheckingAccountNumberKey>'		+ RTrim(FIL->FIL_DVCTA)					+ '</CheckingAccountNumberKey>'
+							cXMLRet += '<CheckingAccountType>'			+ RTrim(FIL->FIL_TIPCTA)					+ '</CheckingAccountType>'
+							cXMLRet += '<MainAccount>'					+ RTrim(FIL->FIL_TIPO)					+ '</MainAccount>'
+							cXMLRet += '<CurrencyAccount>'				+ RTrim(CVALTOCHAR(FIL->FIL_MOEDA))	+ '</CurrencyAccount>'
+							cXmlRet += '</BankingInformation>'
+						Endif
+						FIL->(DbSkip())
+					EndDo
+				EndIf
+
+				RestArea(aFILArea)
+			EndIf
+
+			cXmlRet += '</ListOfBankingInformation>'
+		EndIf
+		cXMLRet += '</BusinessContent>'
+	EndIf
+
+Return {lRet, cXmlRet}
+
+// --------------------------------------------------------------------------------------
+/*/{Protheus.doc} BankName
+Obtem o nome do Banco conforme indice informado
+
+@param cCod Codigo do Banco
+@param cAge Agencia
+@param cCon Conta Corrente
+
+@author  Leandro Luiz da Cruz
+@version P11
+@since   04/12/2012 - 17:36
+@return  cResult Variavel com o valor obtido
+/*/
+// --------------------------------------------------------------------------------------
+
+Static Function BankName(cCod, cAge, cCon)
+	Local cResult  := ""
+	Local aAreaAnt := GetArea()
+
+	// Altera ·rea
+	DbSelectArea("SA6")
+	SA6->(DbSetOrder(1))
+
+	// ObtÈm o nome do Banco conforme Ìndice informado
+	If SA6->(dbSeek(xFilial("SA6") + cCod + cAge + cCon))
+		cResult := AllTrim(SA6->A6_NOME)
+	EndIf
+
+	// Restaura ·rea anterior
+	RestArea(aAreaAnt)
+Return cResult
+
+//-------------------------------------------------------------------
+/*/{Protheus.doc} IntForExt
+Monta o InternalID do Fornecedor de acordo com o cÛdigo passado
+no par‚metro.
+
+@param   cEmpresa   CÛdigo da empresa (Default cEmpAnt)
+@param   cFil       CÛdigo da Filial (Default cFilAnt)
+@param   cFornec    CÛdigo do Fornecedor
+@param   cLoja      Loja   do Fornecedor
+@param   cVersao    Vers„o da mensagem ˙nica (Default 2.000)
+
+@author  Leandro Luiz da Cruz
+@version P11
+@since   08/02/2013
+@return  aResult Array contendo no primeiro par‚metro uma vari·vel
+lÛgica indicando se o registro foi encontrado.
+No segundo par‚metro uma vari·vel string com o InternalID
+montado.
+
+@sample  IntForExt(, , '00001', '01') ir· retornar {.T., '01|01|00001|01|F'}
+/*/
+//-------------------------------------------------------------------
+Function IntForExt(cEmpresa, cFil, cFornec, cLoja, cVersao)
+	Local   aResult  := {}
+	Default cEmpresa := cEmpAnt
+	Default cFil     := xFilial('SA2')
+	Default cVersao  := '2.000'
+
+	If cVersao == '1.000'
+		aAdd(aResult, .T.)
+		aAdd(aResult, PadR(cFornec, TamSX3('A2_COD')[1]) + PadR(cLoja, TamSX3('A2_LOJA')[1]))
+	ElseIf cVersao == '2.000' .Or. cVersao == '2.001' .Or. cVersao == '2.002' .Or. cVersao == '2.003' .Or. cVersao == '2.004' .Or. cVersao == '2.005'
+		aAdd(aResult, .T.)
+		aAdd(aResult, cEmpresa + '|' + RTrim(cFil) + '|' + RTrim(cFornec) + '|' + RTrim(cLoja) + '|F')
+	Else
+		aAdd(aResult, .F.)
+		aAdd(aResult, STR0025 + Chr(10) + STR0029) //"Vers„o n„o suportada." "As versıes suportadas s„o: 1.000, 2.000, 2.001, 2.002."
+	EndIf
+Return aResult
+
+//-------------------------------------------------------------------
+/*/{Protheus.doc} IntForInt
+Recebe um InternalID e retorna o cÛdigo do Fornecedor.
+
+@param   cInternalID InternalID recebido na mensagem.
+@param   cRefer      Produto que enviou a mensagem
+@param   cVersao     Vers„o da mensagem ˙nica (Default 2.000)
+
+@author  Leandro Luiz da Cruz
+@version P11
+@since   08/02/2013
+@return  aResult Array contendo no primeiro par‚metro uma vari·vel
+         lÛgica indicando se o registro foi encontrado no de/para.
+         No segundo par‚metro uma vari·vel array com a empresa,admin
+         filial, o cÛdigo do fornecedor e a loja do fornecedor.
+
+@sample  IntLocInt('01|01|00001|01') ir· retornar
+{.T., {'01', '01', '00001', '01', 'F'}}
+/*/
+//-------------------------------------------------------------------
+Function IntForInt(cInternalID, cRefer, cVersao)
+	Local   aResult  := {}
+	Local   aTemp    := {}
+	Local   cTemp    := ''
+	Local   cAlias   := 'SA2'
+	Local   cField   := 'A2_COD'
+	Default cVersao  := '2.000'
+
+	cTemp := CFGA070Int(cRefer, cAlias, cField, cInternalID)
+
+	If Empty(cTemp)
+		aAdd(aResult, .F.)
+		aAdd(aResult, STR0026 + AllTrim(cInternalID) + STR0027) //"Fornecedor " " n„o encontrado no de/para!"
+	Else
+		If cVersao == '1.000'
+			aAdd(aResult, .T.)
+			aAdd(aTemp, SubStr(cTemp, 1, TamSX3('A2_COD')[1]))
+			aAdd(aTemp, SubStr(cTemp, 1 + TamSX3('A2_COD')[1], TamSX3('A2_LOJA')[1]))
+			aAdd(aResult, aTemp)
+		ElseIf cVersao == '2.000' .Or. cVersao == '2.001' .Or. cVersao == '2.002' .Or. cVersao == '2.003' .Or. cVersao == '2.004' .Or. cVersao == '2.005'
+			aAdd(aResult, .T.)
+			aTemp := Separa(cTemp, '|')
+			aAdd(aResult, aTemp)
+		Else
+			aAdd(aResult, .F.)
+			aAdd(aResult, STR0025 + Chr(10) + STR0029) //"Vers„o n„o suportada." "As versıes suportadas s„o: 1.000, 2.000, 2.001, 2.002."
+		EndIf
+	EndIf
+Return aResult
+
+//-------------------------------------------------------------------
+/*/{Protheus.doc} M020FILDel
+FunÁ„o para deletar as informaÁıes banc·rias do fornecedor (tabela FIL)
+
+@param cFILFil, Filial atual referente a tabela FIL
+@param cCode, CÛdigo do fornecedor
+@param cLoja, Loja do fornecedor
+@author Pedro Alencar
+@since 02/07/2014
+@version P11
+/*/
+//-------------------------------------------------------------------
+Static Function M020FILDel ( cFILFil, cCode, cLoja )
+	Local aAreaAnt := GetArea()
+
+	dbSelectArea("FIL")
+	dbSetOrder(1) //FIL_FILIAL+FIL_FORNEC+FIL_LOJA+FIL_TIPO+FIL_BANCO+FIL_AGENCI+FIL_CONTA
+	IF MsSeek( cFILFil+cCode+cLoja )
+		While FIL->( !EOF() ) .AND. FIL_FILIAL == cFILFil .AND. FIL_FORNEC == cCode .AND. FIL_LOJA == cLoja
+			RecLock( 'FIL', .F. )
+			FIL->( dbDelete() )
+			FIL->( msUnlock() )
+			FIL->( dbSkip() )
+		EndDo
+	Endif
+
+	RestArea( aAreaAnt )
+Return Nil
+
+//-------------------------------------------------------------------
+/*/{Protheus.doc} M020FILGrv
+FunÁ„o para tratar as informaÁıes banc·rias do fornecedor
+
+@param cFILFil, Filial atual referente a tabela FIL
+@param cCode, CÛdigo do fornecedor
+@param cLoja, Loja do fornecedor
+@param aContasFIL, Vetor com as contas do fornecedor
+@return lRet, Retorna se salvou ou n„o a FIL
+@author Pedro Alencar
+@since 02/07/2014
+@version P11
+/*/
+//-------------------------------------------------------------------
+Static Function M020FILGrv ( cFILFil, cCode, cLoja, aContasFIL )
+	Local lRet 		:= .T.
+	Local cBanco 		:= ""
+	Local cAgencia 	:= ""
+	Local cConta 		:= ""
+	Local cDvAGencia 	:= ""
+	Local cDvConta	:= ""
+	Local cTpConta	:= ""
+	Local cMoeda		:= ""
+	Local cPrincipal	:= ""
+	Local nI			:= 0
+
+	//Apaga os bancos do fornecedor para atualizar de acordo com as novas informaÁıes recebidas
+	M020FILDel ( cFILFil, cCode, cLoja )
+
+	If Len( aContasFIL ) > 0
+		For nI := 1 To Len( aContasFIL )
+			cBanco 	:= aContasFIL[nI][1]
+			cAgencia 	:= aContasFIL[nI][2]
+			cDvAGencia	:= aContasFIL[nI][3]
+			cConta 	:= aContasFIL[nI][4]
+			cDvConta 	:= aContasFIL[nI][5]
+			cTpConta 	:= aContasFIL[nI][6]
+			cMoeda 	:= aContasFIL[nI][7]
+			cPrincipal	:= aContasFIL[nI][8]
+
+			If RecLock( 'FIL', .T. )
+				FIL->FIL_FILIAL := cFILFil
+				FIL->FIL_FORNEC := cCode
+				FIL->FIL_LOJA := cLoja
+				FIL->FIL_BANCO := cBanco
+				FIL->FIL_AGENCI := cAgencia
+				FIL->FIL_DVAGE := cDvAGencia
+				FIL->FIL_CONTA := cConta
+				FIL->FIL_DVCTA := cDvConta
+				FIL->FIL_TIPCTA := cTpConta
+				FIL->FIL_TIPO := cPrincipal
+				FIL->FIL_MOEDA := VAL( cMoeda )
+
+				FIL->( MsUnLock() )
+			Else
+				lRet := .F.
+				Exit
+			Endif
+
+		Next nI
+	Endif
+
+Return lRet
+
+/*/{Protheus.doc} ITFINDREG
+Busca fornecedor e posiciona
+
+@param cFILFil, Filial atual referente a tabela FIL
+@param cCode, CÛdigo do fornecedor
+@param cLoja, Loja do fornecedor
+@param aContasFIL, Vetor com as contas do fornecedor
+
+@return lRet, Retorna se salvou ou n„o a FIL
+
+@author Rodrigo Machado Pontes
+@since 18/08/2015
+
+@version P12
+/*/
+Static Function ITFINDREG(cFornece,cLoja)
+
+	Local cQry		:= ""
+	Local lRet		:= .F.
+
+	cQry	:= " SELECT R_E_C_N_O_ AS REG"
+	cQry	+= " FROM " + RetSqlName("SA2") + " SA2"
+	cQry	+= " WHERE	SA2.A2_COD 		= '" + cFornece 	+ "'"
+	cQry	+= " AND 	SA2.A2_LOJA 		= '" + cLoja 	+ "'"
+	cQry	+= " AND 	SA2.A2_FILIAL		= '" + xFilial("SA2")+ "'"
+	cQry	+= " AND 	SA2.D_E_L_E_T_ 	= ''"
+
+	cQry := ChangeQuery(cQry)
+
+	dbUseArea(.T.,"TOPCONN",TcGenQry(,,cQry),"SA2REG",.T.,.T.)
+
+	DbSelectArea("SA2REG")
+	SA2REG->(DbGotop())
+	If SA2REG->(!EOF())
+		lRet := .T.
+
+		DbSelectArea("SA2")
+		SA2->(DbSetOrder(1))
+		SA2->(DbGoto(SA2REG->REG))
+	Endif
+
+	SA2REG->(DbCloseArea())
+
+Return lRet
+
+/*/{Protheus.doc} ProxNum
+Rotina para retornar o Proximo numero para gravaÁ„o
+
+@return cRet, CÛdigo sequÍncial v·lido
+
+@author Pedro Alencar
+@since 26/05/2015
+@version 12.1.6
+/*/
+Static Function ProxNum()
+	Local aAreaSA2 := {}
+	Local cRet := ""
+	Local lLivre := .F.
+
+	aAreaSA2 := SA2->( GetArea() )
+	cRet := GetSxeNum( "SA2", "A2_COD" )
+	SA2->( dbSetOrder( 1 ) )
+
+	While !lLivre
+		If SA2->( msSeek( FWxFilial("SA2") + cRet ) )
+			ConfirmSX8()
+			cRet := GetSxeNum( "SA2", "A2_COD" )
+		Else
+			lLivre := .T.
+		Endif
+	Enddo
+
+	SA2->( RestArea( aAreaSA2 ) )
+Return cRet

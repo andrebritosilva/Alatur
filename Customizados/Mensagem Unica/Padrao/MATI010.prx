@@ -1,0 +1,2037 @@
+#INCLUDE "PROTHEUS.CH"
+#INCLUDE "FWADAPTEREAI.CH"
+#INCLUDE "MATI010.CH"
+#INCLUDE "RWMAKE.CH"
+#INCLUDE "TBICONN.CH"
+
+//-------------------------------------------------------------------------------------------------
+/*/{Protheus.doc} MATI010
+
+Funcao de integracao com o adapter EAI para recebimento do  cadastro de
+Produto (SB1) utilizando o conceito de mensagem unica.
+
+@param   cXml        Variável com conteúdo XML para envio/recebimento.
+@param   nTypeTrans   Tipo de transação. (Envio/Recebimento)
+@param   cTypeMessage  Tipo de mensagem. (Business Type, WhoIs, etc)
+
+@author  Leandro Luiz da Cruz
+@version P11
+@since   24/09/2012
+@return  aRet   - (array)   Contém o resultado da execução e a mensagem XML de retorno.
+       aRet[1] - (boolean)  Indica o resultado da execução da função
+       aRet[2] - (caracter) Mensagem XML para envio
+
+@obs    O método irá retornar um objeto do tipo TOTVSBusinessEvent caso
+        o tipo da mensagem seja EAI_BUSINESS_EVENT ou um tipo
+        TOTVSBusinessRequest caso a mensagem seja do tipo TOTVSBusinessRequest.
+        O tipo da classe pode ser definido com a função EAI_BUSINESS_REQUEST.
+/*/
+//-------------------------------------------------------------------------------------------------
+Function MATI010(cXml, nTypeTrans, cTypeMessage) 
+   Local cError   := ""
+   Local cWarning := ""
+   Local cVersao  := ""
+   Local lRet     := .T.
+   Local cXmlRet  := ""
+   Local aRet     := {}
+   Local aAreaXX4 := {}
+
+   Private oXml   := Nil
+
+   //Mensagem de Entrada
+   If nTypeTrans == TRANS_RECEIVE
+      If cTypeMessage == EAI_MESSAGE_BUSINESS .Or. cTypeMessage == EAI_MESSAGE_RESPONSE
+         oXml := xmlParser(cXml, "_", @cError, @cWarning)
+
+         If oXml != Nil .And. Empty(cError) .And. Empty(cWarning)
+            // Versão da mensagem
+            If Type("oXml:_TOTVSMessage:_MessageInformation:_version:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_MessageInformation:_version:Text)
+               cVersao := StrTokArr(oXml:_TOTVSMessage:_MessageInformation:_version:Text, ".")[1]
+            Else
+	            If Type("oXml:_TOTVSMessage:_MessageInformation:_StandardVersion:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_MessageInformation:_StandardVersion:Text)
+	               cVersao := StrTokArr(oXml:_TOTVSMessage:_MessageInformation:_StandardVersion:Text, ".")[1]
+	            Else
+	               lRet    := .F.
+	               cXmlRet := STR0005 //"Versão da mensagem não informada!"
+	               Return {lRet, cXmlRet}
+	            Endif
+            EndIf
+         Else
+            lRet    := .F.
+            cXmlRet := STR0006 //"Erro no parser!"
+            Return {lRet, cXmlRet}
+         EndIf
+
+         If cVersao == "1"
+         	aRet := v1000(cXml, nTypeTrans, cTypeMessage)
+         ElseIf cVersao == "2"
+         	aRet := v2000(cXml, nTypeTrans, cTypeMessage, oXml)
+         Else
+            lRet    := .F.
+            cXmlRet := STR0007 //"A versão da mensagem informada não foi implementada!"
+            Return {lRet, cXmlRet}
+         EndIf
+      ElseIf cTypeMessage == EAI_MESSAGE_WHOIS
+         aRet := v2000(cXml, nTypeTrans, cTypeMessage, oXml)
+      Endif
+   ElseIf nTypeTrans == TRANS_SEND
+      dbSelectArea('XX4')
+      aAreaXX4 := XX4->(GetArea())
+
+     XX4->(dbSetOrder(1))
+     IF XX4->(dbSeek(Xfilial('XX4') + PADR('MATA010', Len(XX4_ROTINA)) + PADR('ITEM', Len(XX4_MODEL))))
+        If Empty(XX4->XX4_SNDVER)
+           lRet    := .F.
+           cXmlRet := STR0008 //"Versão não informada no cadastro do adapter."
+           Return {lRet, cXmlRet}
+        Else
+           cVersao := StrTokArr(XX4->XX4_SNDVER, ".")[1]
+        EndIf
+     Else
+        lRet    := .F.
+        cXmlRet := STR0009 //"Adapter não encontrado!"
+        Return {lRet, cXmlRet}
+     EndIf
+
+     If cVersao == "1"
+        aRet := v1000(cXml, nTypeTrans, cTypeMessage)
+     ElseIf cVersao == "2"
+        aRet := v2000(cXml, nTypeTrans, cTypeMessage, oXml)
+	 Else
+        lRet    := .F.
+        cXmlRet := STR0007 //"A versão da mensagem informada não foi implementada!"
+        Return {lRet, cXmlRet}
+     EndIf
+  
+      RestArea(aAreaXX4)
+   EndIf
+
+   lRet    := aRet[1]
+   cXMLRet := aRet[2]
+Return {lRet, cXmlRet}
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±º Function  ³ MATI010  º Autor ³ Marcelo C. Coutinho  º Data ³  28/10/11   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±º Desc.    ³ Funcao de integracao com o adapter EAI para recebimento e    º±±
+±±º          ³ envio de informações do cadastro de produtos        (SB1)    º±±
+±±º          ³ utilizando o conceito de mensagem unica.                     º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±º Param.   ³ cXML - Variavel com conteudo xml para envio/recebimento.     º±±
+±±º          ³ nTypeTrans - Tipo de transacao. (Envio/Recebimento)          º±±
+±±º          ³ cTypeMessage - Tipo de mensagem. (Business Type, WhoIs, etc) º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±º Retorno  ³ aRet - Array contendo o resultado da execucao e a mensagem   º±±
+±±º          ³        Xml de retorno.                                       º±±
+±±º          ³ aRet[1] - (boolean) Indica o resultado da execução da função º±±
+±±º          ³ aRet[2] - (caracter) Mensagem Xml para envio                 º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±º Uso      ³ MATA010                                                      º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function v1000( cXML, nTypeTrans, cTypeMessage )
+
+Local aArea	   	:= GetArea()
+Local aAreaSA7	:= SA7->(GetArea())
+Local aAreaSBM	:= SBM->(GetArea())
+Local lRet     	:= .T.
+Local lExclui		:= .T.
+Local cXMLRet  	:= ""
+Local cError		:= ""
+Local cWarning 	:= ""
+Local nCount		:= 0
+Local aCab		:= {}
+Local aDadosSB5	:={}
+Local aCabAux		:= {} 
+Local aCabSA7		:= {}
+Local nOpcx		:= 0 
+Local nOpcxC		:= 0
+Local cLogErro 	:= ""
+Local aErroAuto	:= {}
+Local cEvent		:= "upsert"   
+Local cCodPro		:= "" 
+Local cDescPro	:= "" 
+Local cDescProB5	:= "" 
+Local cCliInt		:= ""
+Local cLojInt		:= ""
+Local cCliExt		:= ""
+Local cLojExt		:= "" 
+Local cCodCli		:= ""
+Local cLojCli		:= ""
+Local cDescGrupo	:= ""	//Descricao do grupo do produto
+Local nPeso	  	:= 0	//Peso do produto
+Local nLoteMin	:= 0	//Lote minimo de venda 
+Local nLote		:= 0	//Lote Economic
+Local lInitCode  := .F.//Verifica se possui inicializador padrao
+
+//Variaveis utilizadas no De/Para de Codigo Interno X Codigo Externo 
+Local cMarca		:= "" //Armazena a Marca (LOGIX,PROTHEUS,RM...) que enviou o XML
+Local cValExt		:= "" //Codigo externo utilizada no De/Para de codigos - Tabela XXF
+Local cValInt		:= "" //Codigo interno utilizado no De/Para de codigos - Tabela XXF
+Local cAlias		:= "SB1"
+Local cCampo		:= 'B1_COD'
+Local cProdActiv  := "1" //1=Ativo;0=Não Ativo
+Local lMktPlace 	:= SuperGetMv("MV_MKPLACE",.F.,.F.)
+Local cIntCC      := ' '
+Local cIntLocal   := ' '
+Local cIntUM      := ' '
+Local cIntGrupo   := ' '
+
+Local lFilSB1     := .F.	// identifica se o conteúdo da filial foi gravado no de/para
+Local cKeySB1     := ' '
+Local cKeySB5     := ' '
+Local nTamFil     := FWSizeFilial()
+Local nTamCod     := TamSx3('B1_COD')[1]
+Local lAltValInt	 := SuperGetMv("MV_AVALINT",,.F.)
+Local lMt010int	:= ExistBlock("MT010INT")
+Local aProdCli	:= {}
+
+Private oXmlM010		  	:= Nil
+Private nCountM010	  	:= 0
+Private lMsErroAuto    	:= .F.
+Private lAutoErrNoFile	:= .T. 
+Private nModulo        	:= 5 
+
+If ( Type("Inclui") == "U" )
+	Private Inclui := .F.
+EndIf
+
+If ( Type("Altera") == "U" )
+	Private Altera := .F.
+EndIf
+
+//Tratamento do recebimento de mensagens
+If ( nTypeTrans == TRANS_RECEIVE )
+
+	//Business Message
+	If ( cTypeMessage == EAI_MESSAGE_BUSINESS )
+	
+		oXmlM010 := XmlParser( cXml, "_", @cError, @cWarning )		
+		
+		//Valida se houve erro no parser
+		If ( oXmlM010 <> Nil ) .And. ( Empty(cError) ) .And. ( Empty(cWarning) ) 
+			If Type("oXmlM010:_TotvsMessage:_MessageInformation:_Product:_Name:Text") <> "U" 					
+				cMarca :=  oXmlM010:_TotvsMessage:_MessageInformation:_Product:_Name:Text
+			EndIf
+			
+			If lMktPlace
+				If Type("oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_InternalId:Text") <> "U"
+					cValExt := oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_InternalId:Text
+				ElseIf Type("oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Code:Text") <> "U"
+					cValExt := oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Code:Text
+				EndIf
+			Else
+				If Type("oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Code:Text") <> "U"
+					cValExt := oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Code:Text
+				EndIf
+			Endif
+			
+			If Type("oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Name:Text") <> "U"
+				cDescPro := oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Name:Text				
+			EndIf
+			
+			//--------------------------------------------------------------------------------------
+			//-- Tratamento utilizando a tabela XXF com um De/Para de codigos   
+			//-------------------------------------------------------------------------------------- 
+			                               
+  			cValInt := SubStr( CFGA070INT( cMarca, cAlias, cCampo , cValExt ), 1, nTamFil+nTamCod )
+			
+			//-------------------------------------------------------------------
+			//  Verifica se a filial já foi gravada com o código do produto
+			// para tratar o modo como a rotina foi construída
+			lFilSB1 := !Empty(cValInt) .And. ( SubStr( cValInt, 1, nTamFil)==xFilial('SB1') ) .And. SB1->( DbSeek( cValInt ) )
+			
+			If Upper(oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessEvent:_Event:Text) == "DELETE"  					
+				nOpcx := 5
+				nOpcxC:= 5  /// complemento
+				cKeySB1 := If( lFilSB1, cValInt, xFilial("SB1")+cValInt )
+				If !Empty(cValInt) .And. SB1->( DbSeek( cKeySB1 ) )
+					lExclui := .T.							
+				Else
+					lExclui := .F.
+					lRet := .F.
+					cXmlRet := EncodeUTF8(STR0003 + cValExt) // "Registro não encontrado para exclusão "
+				EndIf
+			Else // nOpcx <> 5
+				cKeySB1 := If( lFilSB1, cValInt, xFilial("SB1")+cValInt )
+				cKeySB5 := xFilial("SB5") + If( lFilSB1, Substr(cValInt,nTamFil+1,nTamCod), cValInt )
+				If !Empty(cValInt) .And. SB1->(DbSeek( cKeySB1 ) )
+					nOpcx 	:= 4	
+					Altera 	:= .T.   
+					
+					SB5->(DbSetOrder(1))
+					If !SB5->(DBSeek(cKeySB5))
+					   /// se encontrar o produco na Sb1, e não encontrar o complemento SB5 - faz update na Sb1 e Insert na SB5
+						nOpcxC 	:= 3 // Inclui
+					Else
+						nOpcxC 	:= 4 // Altera															
+					Endif
+					
+				Else
+					nOpcx 	:= 3	 
+					nOpcxC 	:= 3 // Inclui - SB5
+					Inclui 	:= .T.	
+				EndIf
+			EndIf
+				
+			If nOpcx == 3
+				If Empty(Posicione('SX3',2,Padr('B1_COD' ,10),'X3_RELACAO'))
+					If lMt010int
+						//Ponto de entrada para definir qual codigo deseja gravar no B1_COD
+						cCodPro := ExecBlock("MT010INT",.F.,.F.,{oXmlM010})
+					Else
+						cCodPro := Substr(cValExt,1,TamSX3('B1_COD')[1])
+					Endif
+				Else	
+					lInitCode := .T.
+				EndIf
+			Else
+				cCodPro := SB1->B1_COD
+			EndIf
+			
+			If nOpcx <> 3 .Or. ( nOpcx == 3 .And. !lInitCode )
+		  		Aadd(aCab,{"B1_COD" , cCodPro, Nil })
+		  		Aadd(aDadosSB5,{"B5_COD" , cCodPro, Nil })     //// 	SB5   - FLAVIO
+		 	EndIf
+							
+				
+			BEGIN TRANSACTION 
+				
+				If nOpcx <> 5   
+				
+					//Descricao do produto
+					Aadd( aCab, { "B1_DESC",      cDescPro,                                                                                Nil })
+					Aadd( aDadosSB5, { "B5_CEME",      cDescPro,                                                                                Nil })   //// SB5 -- FLAVIO
+					
+					//Tipo do produto
+					If Type("oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StockGroupCode:Text") <> "U"
+						Aadd( aCab, { "B1_TIPO",     oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StockGroupCode:Text,         Nil })
+					EndIf
+					
+					If lMktPlace
+						//Unidade de medida
+						If Type("oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_UnitOfMeasureInternalId:Text") <> "U"
+							cIntUM := CFGA070INT( cMarca, 'SAH', 'AH_UNIMED', oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_UnitOfMeasureInternalId:Text )
+							
+							SAH->( DbSetOrder( 1 ) )
+							If !Empty(cIntUM) .And. SAH->( Dbseek( cIntUM ) )
+								Aadd( aCab, { "B1_UM", SAH->AH_UNIMED, Nil } )
+							ElseIf Type("oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_UnitOfMeasureCode:Text") <> "U"
+								Aadd( aCab, { "B1_UM",   oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_UnitOfMeasureCode:Text,      Nil })
+							EndIf 
+						ElseIf Type("oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_UnitOfMeasureCode:Text") <> "U"
+							Aadd( aCab, { "B1_UM",       oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_UnitOfMeasureCode:Text,      Nil })
+						EndIf
+					Else
+						If Type("oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_UnitOfMeasureCode:Text") <> "U"
+							Aadd( aCab, { "B1_UM",       oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_UnitOfMeasureCode:Text,      Nil })
+						EndIf
+					Endif
+					
+					If lMktPlace
+						//Armazem padrao
+						If Type("oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StandardWarehouseInternalId:Text") <> "U"
+							cIntLocal := CFGA070INT( cMarca, 'SAH', 'AH_UNIMED', oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StandardWarehouseInternalId:Text )
+							
+							NNR->( DbSetOrder( 1 ) )
+							If !Empty( cIntLocal ) .And. NNR->( DbSeek( cIntLocal ) )
+								Aadd( aCab, { "B1_LOCPAD", NNR->NNR_CODIGO, Nil } )
+							ElseIf Type("oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StandardWarehouseCode:Text") <> "U"
+								If !Empty( oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StandardWarehouseCode:Text )
+									Aadd( aCab, { "B1_LOCPAD", oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StandardWarehouseCode:Text, Nil })				
+								EndIf
+							EndIf
+						ElseIf Type("oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StandardWarehouseCode:Text") <> "U"
+							If !Empty( oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StandardWarehouseCode:Text )
+								Aadd( aCab, { "B1_LOCPAD", oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StandardWarehouseCode:Text, Nil })				
+							EndIf
+						Else
+							Aadd( aCab, { "B1_LOCPAD", '01', Nil })
+						EndIf
+					Else
+						If Type("oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StandardWarehouseCode:Text") <> "U"
+							If !Empty( oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StandardWarehouseCode:Text )
+								Aadd( aCab, { "B1_LOCPAD", oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StandardWarehouseCode:Text, Nil })				
+							EndIf
+						Else
+							Aadd( aCab, { "B1_LOCPAD", '01', Nil })
+						EndIf
+					Endif
+						
+					// Origem
+					If Type("oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Origin:_Code:Text") <> "U"
+						Aadd( aCab, { "B1_ORIGEM",  oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Origin:_Code:Text,            Nil })
+					ElseIf Type("oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Origin:Text") <> "U"
+						Aadd( aCab, { "B1_ORIGEM",  oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Origin:Text,            Nil })
+					EndIf
+					
+					//IPI
+					If Type("oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_FiscalInformation:_FiscalClassification:_Code:Text") <> "U"
+						Aadd( aCab, { "B1_POSIPI",  oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_FiscalInformation:_FiscalClassification:_Code:Text, Nil })
+					ElseIf Type("oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_FiscalInformation:_FiscalClassification:_FiscalClassificationCode:Text") <> "U"
+						Aadd( aCab, { "B1_POSIPI",  oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_FiscalInformation:_FiscalClassification:_FiscalClassificationCode:Text, Nil })
+					EndIf
+					
+					If lMktPlace	
+						//Segunda unidade de medida
+						If ( Type( "oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_SecondUnitOfMeasureInternalId:Text" ) <> "U" )
+							cIntUM := CFGA070INT( cMarca, 'SAH', 'AH_UNIMED', oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_SecondUnitOfMeasureInternalId:Text )
+							
+							SAH->( DbSetOrder( 1 ) )
+							
+							If !Empty( cIntUM ) .And. SAH->( DbSeek( cIntUM ) )
+								aAdd( aCab, { "B1_SEGUM", SAH->AH_UNIMED, Nil } )
+							ElseIf ( Type( "oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_SecondUnitOfMeasure:Text" ) <> "U" )
+								aAdd( aCab, { "B1_SEGUM", oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_SecondUnitOfMeasure:Text, Nil } )
+							EndIf
+						ElseIf ( Type( "oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_SecondUnitOfMeasure:Text" ) <> "U" )
+							aAdd( aCab, { "B1_SEGUM", oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_SecondUnitOfMeasure:Text, Nil } )
+						EndIf
+					Else
+						If ( Type( "oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_SecondUnitOfMeasure:Text" ) <> "U" )
+							aAdd( aCab, { "B1_SEGUM", oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_SecondUnitOfMeasure:Text, Nil } )
+						EndIf
+					Endif
+					
+					If lMktPlace
+						//Grupo do produto
+						If ( Type( "oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_GroupInternalId:Text" ) <> "U" )
+							cIntGrupo := CFGA070INT( cMarca, 'SBM', 'BM_GRUPO', oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_GroupInternalId:Text )
+							
+							SBM->( DbSetOrder( 1 ) )
+							
+							If !Empty(cIntGrupo) .And. SBM->( DbSeek(cIntGrupo) )
+								aAdd( aCab, { "B1_GRUPO", SBM->BM_GRUPO, Nil } )
+							ElseIf ( Type( "oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_GroupCode:Text" ) <> "U" )
+								aAdd( aCab, { "B1_GRUPO", oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_GroupCode:Text, Nil } )
+							EndIf 
+						ElseIf ( Type( "oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_GroupCode:Text" ) <> "U" )
+							aAdd( aCab, { "B1_GRUPO", oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_GroupCode:Text, Nil } )
+						EndIf
+					Else
+						If ( Type( "oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_GroupCode:Text" ) <> "U" )
+							aAdd( aCab, { "B1_GRUPO", oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_GroupCode:Text, Nil } )
+						EndIf
+					Endif
+						
+					//Lote minimo
+					If ( Type( "oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_MinimumLot:Text" ) <> "U" )
+						nLoteMin := Val( oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_MinimumLot:Text )
+						aAdd( aCab, { "B1_LM", nLoteMin, Nil } )
+					EndIf
+					
+					//Peso liquido
+					If ( Type( "oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_NetWeight:Text" ) <> "U" )
+						nPeso := Val( oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_NetWeight:Text )
+						aAdd( aCab, { "B1_PESO", nPeso, Nil } )
+					EndIf
+									
+					//Ativo			
+					If ( Type( "oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Active:Text" ) <> "U" )
+						cProdActiv := AllTrim( oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Active:Text )                                                                                                                  
+						If cProdActiv == '0' .Or. Upper(cProdActiv) == 'FALSE' // Nao Ativo
+							aAdd( aCab, { "B1_ATIVO", 'N', Nil } )  
+							aAdd( aCab, { "B1_MSBLQL", '1', Nil } )
+						ElseIf cProdActiv == '1' .Or. Upper(cProdActiv) == 'TRUE' // Ativo 
+							aAdd( aCab, { "B1_ATIVO", 'S', Nil } )
+							aAdd( aCab, { "B1_MSBLQL", '2', Nil } )	
+						EndIf
+					EndIf
+					
+					If lMktPlace
+						// Centro de Custo
+						If ( Type( "oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_CostCenterInternalId:Text" ) <> "U" )
+							cIntCC := CFGA070INT( cMarca, 'CTT', 'CTT_CUSTO', oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_CostCenterInternalId:Text)
+							
+							CTT->( DbSetOrder( 1 ) ) 
+							
+							If !Empty( cIntCC ) .And. CTT->( DbSeek( cIntCC ) )
+								 aAdd( aCab, { "B1_CC", CTT->CTT_CUSTO, Nil } )
+							EndIf
+						EndIf
+					Endif
+					
+					// Lote Econômico
+					If ( Type( "oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_EconomicLot:Text" ) <> "U" )
+						nLote := Val( oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_EconomicLot:Text )
+						aAdd( aCab, { "B1_LE", nLote, Nil } )
+					EndIf
+					
+					// Peso Bruto
+					If ( Type( "oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_GrossWeight:Text" ) <> "U" )
+						nPeso := Val( oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_GrossWeight:Text )
+						aAdd( aCab, { "B1_PESBRU", nPeso, Nil } )
+					EndIf
+						
+					// Fator de Conversão
+					If ( Type( "oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_MultiplicationFactorValue:Text" ) <> "U" )
+						aAdd( aCab, { "B1_CONV", Val( oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_MultiplicationFactorValue:Text ), Nil } )
+					EndIf
+					
+					// Rastro
+					If ( Type( "oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Trail:Text" ) <> "U" )
+						aAdd( aCab, { "B1_RASTRO", oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Trail:Text, Nil } )
+					EndIf      
+									
+					// CatMat -- categoria de produtos - governo
+					If ( Type( "oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_GovernmentCode:Text" ) <> "U" )
+						aAdd( aDadosSB5, { "B5_CATMAT", oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_GovernmentCode:Text, Nil } )
+					EndIf      
+						
+					// Código do Item de Veículos 
+					If ( Type( "oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_VeicCode:Text" ) <> "U" )
+						aAdd( aCab, { "B1_CODITE", SubStr(oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_VeicCode:Text, 1, TamSx3('B1_CODITE')[1]), Nil } )
+					Else
+						If X3Obrigat("B1_CODITE")
+							aAdd( aCab, { "B1_CODITE", SubStr(cCodPro, 1, TamSx3('B1_CODITE')[1]), Nil } )
+						Endif
+					EndIf
+												
+				//Tratamento para amarracao ClienteXProduto(SA7) - Exclui a amarracao para depois realizar a exclusao do produto
+				ElseIf nOpcx == 5 .And. lExclui .And.;					
+					Type("oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCustomerItemInformation:_CustomerItemInformation") <> "U"          
+			        
+					aProdCli := prodCli(cCodPro,cMarca,nOpcX,"1.000","",oXmlM010)
+					If !aProdCli[1,1]
+						lRet		:= .F.
+						cXMLRet	:= aProdCli[1,2]
+						DisarmTransaction()
+					Endif	
+				EndIf  
+		  		
+		  		If lRet
+		  			If nOpcx == 5 .And. !lExclui
+						lMsErroAuto := .F.
+					Else
+						If nOpcx == 5 
+							cValInt := SB1->B1_COD
+							CFGA070Mnt(cMarca , cAlias, cCampo, cValExt , cValInt, .T. )
+						EndIf
+						
+						If nOpcx <> 3
+							SB1->(DbSetOrder(1))
+							SB1->(DbSeek(xFilial("SB1") + PadR(SB1->B1_COD,TamSx3("B1_COD")[1])))
+						Endif
+						MSExecAuto( { |x,y| MATA010(x,y) }, aCab, nOpcx )
+					EndIf				
+	
+					If ( lMsErroAuto )
+						//Trata erro na execucao da MSExecAuto
+						aErroAuto := GetAutoGRLog()
+						
+						For nCount := 1 To Len(aErroAuto)
+							cLogErro += _NoTags(aErroAuto[nCount])
+						Next nCount
+						
+						// Monta XML de Erro de execucao da rotina automatica.
+						lRet	 := .F.
+						cXMLRet := EncodeUTF8( cLogErro )
+						
+						DisarmTransaction()
+					Else
+						cCodPro := SB1->B1_COD
+						
+						///// Tratamento para incluir complemento do cadastro de Produtos SB5
+						// CatMat -- categoria de produtos - governo
+						If nOpcx # 5 .And. Type( "oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_GovernmentCode:Text" ) <> "U"
+							If aScan(aDadosSB5,{|x| x[1] == "B5_COD"}) == 0
+								Aadd(aDadosSB5,{"B5_COD" , cCodPro, Nil })     //// 	SB5   - FLAVIO
+							EndIf
+							MSExecAuto({|x,y| Mata180(x,y)},aDadosSB5,nOpcxC)
+							
+							If lMsErroAuto
+								aErroAuto := GetAutoGRLog()
+								
+								For nCount := 1 To Len(aErroAuto)
+									cLogErro += _NoTags(aErroAuto[nCount])
+								Next nCount
+								
+								// Monta XML de Erro de execucao da rotina automatica.
+								lRet	 := .F.
+								cXMLRet := EncodeUTF8( cLogErro )
+								
+								DisarmTransaction()
+							Endif
+						Endif
+					
+						//Tratamento para amarracao ClienteXProduto(SA7) - Inclui a amarracao apos inclusao ou alteracao do produto
+						If ( nOpcx <> 5 ) .And. !lMsErroAuto
+							aProdCli := prodCli(cCodPro,cMarca,nOpcx,"1.000",cDescPro,oXmlM010)
+							
+							If !aProdCli[1,1]
+								lRet := .F.
+								cXMLRet := aProdCli[1,2]
+								DisarmTransaction()
+							Endif
+							
+							If ( lRet )
+								cValInt := xFilial('SB1')+cCodPro
+			        			
+			        			//Parametro MV_AVALINT habilitado, o InternalId do produto sera apenas o codigo do produto
+			        			If lAltValInt
+			        				cValInt := cCodPro
+			        			Endif
+			        			
+			        			If ( !Empty(cValExt) ) .And. ( !Empty(cValInt) )
+						        	CFGA070Mnt( cMarca, cAlias, cCampo, cValExt, cValInt )
+						        	
+						    		// Monta xml com status do processamento da rotina automatica OK.
+									cXMLRet += "<ItemCode>"     + cValExt + "</ItemCode>"  //Valor recebido na tag "BusinessMessage:BusinessContent:Code"
+									cXMLRet += "<ExternalCode>" + cValInt + "</ExternalCode>"	//Valor gerado    	
+				        	   	EndIf
+							EndIf
+			        	EndIf
+					EndIf
+				Endif
+		 	END TRANSACTION
+		Else
+			// "Falha ao gerar o objeto XML"
+			lRet := .F.
+			cXMLRet := EncodeUTF8( STR0004 ) // "Falha ao manipular o XML"
+		EndIf
+
+	//Response Message
+	ElseIf cTypeMessage == EAI_MESSAGE_RESPONSE
+	
+		//Gravacao do De/Para Codigo Interno X Codigo Externo  
+		oXmlM010 := XmlParser(cXml, "_", @cError, @cWarning)
+
+		If oXmlM010 <> Nil .And. Empty(cError) .And. Empty(cWarning)
+			If Upper(oXmlM010:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_Status:Text) == "OK"
+				If Type("oXmlM010:_TotvsMessage:_MessageInformation:_Product:_Name:Text") <> "U" 					
+					cMarca :=  oXmlM010:_TotvsMessage:_MessageInformation:_Product:_Name:Text
+				EndIf
+			   	If Type("oXmlM010:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ItemCode:Text") <> "U"	
+			   		cValInt := oXmlM010:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ItemCode:Text
+			   	EndIf
+			   	If Type("oXmlM010:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ExternalCode:Text") <> "U"	
+			   	  	cValExt := oXmlM010:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ExternalCode:Text
+			   	EndIf 
+		   	  
+				If !Empty(cValExt) .And.!Empty(cValInt)  
+					If CFGA070Mnt( cMarca, cAlias, cCampo, cValExt, cValInt ) 
+				  		lRet    := .T. 
+				 	EndIf
+	         	Else
+	         		lRet    := .F.
+	       	EndIf
+	       Else //Erro
+	       	If Type("oXmlM010:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_ListOfMessages:_Message") != "U"
+       			// Se não for array
+       		 	If Type("oXmlM010:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_ListOfMessages:_Message") != "A"
+	              	// Transforma em array
+	               	XmlNode2Arr(oXmlM010:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_ListOfMessages:_Message, "_Message")
+	            	EndIf
+	
+	            	// Percorre o array para obter os erros gerados
+	            	For nCount := 1 To Len(oXmlM010:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_ListOfMessages:_Message)
+	              	cError := oXmlM010:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_ListOfMessages:_Message[nCount]:Text + CRLF
+	            	Next nCount
+	
+	            	lRet := .F.
+	            	cXmlRet := cError
+				Endif
+	       Endif
+	   	EndIf	
+	
+	//WhoIs Message
+	ElseIf   cTypeMessage == EAI_MESSAGE_WHOIS
+		cXMLRet := '1.000|1.001|2.000|2.001'
+	EndIf
+	
+//Tratamento do envio de mensagens	
+ElseIf nTypeTrans == TRANS_SEND
+
+	//Verifica se é uma exclusão
+	If !Inclui .And. !Altera
+		cEvent := 'delete'
+	EndIf
+		
+		//Busca descricao do grupo de produtos
+		dbSelectArea("SBM")
+		SBM->(dbSetOrder(1))	//BM_FILIAL + BM_GRUPO
+		
+		If ( AllTrim( SB1->B1_GRUPO ) != "" ) .And. ( SBM->( dbSeek( xFilial("SBM") + SB1->B1_GRUPO ) ) )
+			cDescGrupo := SBM->BM_DESC
+		EndIf   
+		
+		cDescPro    := SB1->B1_DESC
+		cDescProB5	:= Posicione("SB5",1,xFilial("SB5")+SB1->B1_COD,"B5_CEME")
+
+		If lMktPlace .And. !Empty(cDescProB5)
+				cDescPro := cDescProB5
+		EndIf
+		
+		If AllTrim(SB1->B1_ATIVO) == 'N'   
+			cProdActiv  :=  '0'
+		EndIf	
+	
+		//Monta XML de envio de mensagem unica
+		cXMLRet := '<BusinessEvent>'
+		cXMLRet +=     '<Entity>Item</Entity>'
+		cXMLRet +=     '<Event>' + cEvent + '</Event>'
+		cXMLRet +=     '<Identification>'
+		cXMLRet +=         '<key name="Code">' + RTrim(SB1->B1_COD) + '</key>'
+		cXMLRet +=     '</Identification>'	
+		cXMLRet += '</BusinessEvent>'
+		
+		cXMLRet += '<BusinessContent>'
+		cXMLRet += 	'<CompanyId>' + cEmpAnt + '</CompanyId>'
+       cXMLRet += 	'<BranchId>' + cFilAnt + '</BranchId>'                             
+     	      
+       If lMktPlace
+       	cXMLRet +=  	'<CompanyInternalId>' + cEmpAnt + '|' + cFilAnt + '</CompanyInternalId>'
+	       cXMLRet +=  	'<InternalId>' + cEmpAnt + '|' + RTrim(xFilial("SB1"))+ "|" + RTrim(SB1->B1_COD) + '</InternalId>'
+	   	Endif
+		
+		cXMLRet += 	'<Code>' + RTrim(SB1->B1_COD) + '</Code>'
+		cXMLRet += 	'<Name>' + _NoTags(RTrim(cDescPro)) + '</Name>'
+		cXMLRet += 	'<ShortName>' + _NoTags(RTrim(cDescPro)) + '</ShortName>'  
+		cXMLRet +=  	'<Detail>' + _NoTags(RTrim(cDescPro)) + '</Detail>'
+		cXMLRet += 	'<Active>' + RTrim(cProdActiv) + '</Active>' 
+		
+		If lMktPlace .And. !Empty(SB1->B1_GRUPO)
+			cXMLRet += 	'<StockGroupCode>' + RTrim(SB1->B1_GRUPO) + '</StockGroupCode>'
+			cXMLRet += 	'<StockGroupDescription>' + RTrim(cDescGrupo) + '</StockGroupDescription>'
+		Else
+			cXMLRet += 	'<StockGroupCode>' + RTrim(SB1->B1_TIPO) + '</StockGroupCode>'
+			cXMLRet += 	'<StockGroupDescription>' + RTrim(Posicione("SX5",1,xFilial("SX5")+'02'+SB1->B1_TIPO,"SX5->X5_DESCRI"))+ '</StockGroupDescription>'
+		EndIf
+		
+		cXMLRet += 	'<UnitOfMeasureCode>' + RTrim(SB1->B1_UM) + '</UnitOfMeasureCode>'
+		
+		If lMktPlace
+			cXMLRet += 	'<UnitOfMeasureInternalId>' + cEmpAnt + "|" + RTrim(xFilial("SAH")) + "|" + RTrim(SB1->B1_UM) + '</UnitOfMeasureInternalId>'
+		Endif
+				
+		cXMLRet += 	'<StandardWarehouseCode>' + IIf( !Empty( SB1->B1_LOCPAD ), RTrim(SB1->B1_LOCPAD), '01' ) + '</StandardWarehouseCode>'		
+		cXMLRet += 	'<MinimumLot>' + cValToChar(SB1->B1_LM) + '</MinimumLot>'
+		cXMLRet += 	'<NetWeight>' + cValToChar(SB1->B1_PESO) + '</NetWeight>'			
+		cXMLRet += 	'<FiscalInformation><FiscalClassification>'
+		cXMLRet += 		'<Code>' + RTrim(SB1->B1_POSIPI) + '</Code>'
+		cXMLRet += 		'<Description/>'
+		cXMLRet += 	'</FiscalClassification></FiscalInformation>'
+		cXMLRet += 	'<GroupCode>' + RTrim(SB1->B1_GRUPO) + '</GroupCode>'
+		cXMLRet += 	'<GroupName>' + RTrim(cDescGrupo) + '</GroupName>'
+		cXMLRet += 	'<SecondUnitOfMeasure>' + RTrim(SB1->B1_SEGUM) + '</SecondUnitOfMeasure>'			
+		cXMLRet += 	'<Origin>' + AllTrim(SB1->B1_ORIGEM) + '</Origin>'
+		dbSelectArea("SA7")	
+		SA7->(dbSetOrder(2))	//A7_FILIAL + A7_CLIENTE + A7_LOJA + A7_PRODUTO
+				
+		If ( SA7->( MsSeek( xFilial("SA7") + SB1->B1_COD ) ) )
+		
+			cXMLRet += '<ListOfCustomerItemInformation>'
+		
+			While !SA7->(EOF()) .And. SA7->A7_PRODUTO == SB1->B1_COD
+				cXMLRet += '<CustomerItemInformation>' 
+				cXMLRet += 		'<CustomerCode>' + RTrim(SA7->A7_CLIENTE) + RTrim(SA7->A7_LOJA) + '</CustomerCode>'
+				cXMLRet += 		'<CustomerItemCode>' + RTrim(SA7->A7_CODCLI) + '</CustomerItemCode>'
+				cXMLRet += '</CustomerItemInformation>'
+				SA7->(dbSkip())
+			EndDo 
+		
+			cXMLRet += '</ListOfCustomerItemInformation>'
+		
+		EndIf 
+		
+		cXMLRet += '</BusinessContent>'
+
+	EndIf
+
+                      
+RestArea(aAreaSBM)
+RestArea(aAreaSA7)
+RestArea(aArea)
+                      
+Return { lRet, cXMLRet }
+
+//-------------------------------------------------------------------------------------------------
+/*/{Protheus.doc} v2000
+
+Funcao de integracao com o adapter EAI para recebimento do  cadastro de
+Produto (SB1) utilizando o conceito de mensagem unica.
+
+@param   cXml        Variável com conteúdo XML para envio/recebimento.
+@param   nTypeTrans   Tipo de transação. (Envio/Recebimento)
+@param   cTypeMessage  Tipo de mensagem. (Business Type, WhoIs, etc)
+
+@author  Leandro Luiz da Cruz
+@version P11
+@since   24/09/2012
+@return  aRet  - (array)   Contém o resultado da execução e a mensagem XML de retorno.
+       aRet[1] - (boolean)  Indica o resultado da execução da função
+       aRet[2] - (caracter) Mensagem XML para envio
+
+@obs    O método irá retornar um objeto do tipo TOTVSBusinessEvent caso
+       o tipo da mensagem seja EAI_BUSINESS_EVENT ou um tipo
+       TOTVSBusinessRequest caso a mensagem seja do tipo TOTVSBusinessRequest.
+       O tipo da classe pode ser definido com a função EAI_BUSINESS_REQUEST.
+/*/
+//-------------------------------------------------------------------------------------------------
+Static Function v2000(cXml, nTypeTrans, cTypeMessage, oXml)
+   Local lRet                       := .T.
+   Local lLog                       := .T. //FindFunction("AdpLogEAI")
+   Local nEvento                    := 0 
+   Local nCount                     := 1
+   Local cXMLRet                    := ""
+   Local cLogErro                   := ""
+   Local aProd                      := {}
+   Local aErroAuto                  := {}
+   Local aProdCli                   := {}
+   Local aAux                       := {}
+   Local cEvent                     := ""
+   Local cProduct                   := ""
+   Local cValInt                    := ""
+   Local cValExt                    := ""
+   Local cAlias                     := "SB1"
+   Local cField                     := "B1_COD"
+   Local cCode                      := ""
+   Local cStandardWarehouseCode     := ""
+   Local nAverageCostPrice          := 0
+   Local cError                     := ""
+   Local cWarning                   := ""
+   Local cUMExt                     := ""
+   Local cUMInt                     := ""
+   Local cStWaExt                   := ""
+   Local cStWaInt                   := ""
+   Local cEntity                    := "Item"
+   Local aAreaAnt                   := GetArea()
+   Local nPrecoCusto                := 0
+   Local nCustoPadrao               := 0
+   Local dDataBase                  := Nil
+   Local nCustoMedio                := 0
+   Local aProdSB5						 := {}//@@
+   Local lDescSB5						 := GetNewPar("MV_MUDESB5",.F.) // diz se ira usar a SB5 para complementar a descrição
+   Local nEventoSB5					 := 0
+   Local cCodGrupo				  	 := ""
+   Local cMarca					  	 := ""
+   Local aFAMSTOCK					 := {}
+
+   Private lMsErroAuto              := .F.
+   Private lAutoErrNoFile           := .T.
+   Private lMsHelpAuto              := .T.
+
+   IIf(lLog, AdpLogEAI(1, "MATI010", nTypeTrans, cTypeMessage, cXML), ConOut(STR0011)) //"Atualize o UPDINT01.prw para utilizar o log"
+
+   If nTypeTrans == TRANS_RECEIVE
+      If cTypeMessage == EAI_MESSAGE_BUSINESS
+         
+         // Evento
+         If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessEvent:_Event:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessEvent:_Event:Text)
+            cEvent := Upper(oXml:_TOTVSMessage:_BusinessMessage:_BusinessEvent:_Event:Text)
+         Else
+            lRet   := .F.
+            cXmlRet := STR0012 //"O evento é obrigatório"
+            IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+            Return {lRet, cXMLRet}
+         EndIf
+
+         // Marca
+         If Type("oXml:_TotvsMessage:_MessageInformation:_Product:_Name:Text") != "U" .And. !Empty(oXml:_TotvsMessage:_MessageInformation:_Product:_Name:Text)
+            cProduct := oXml:_TotvsMessage:_MessageInformation:_Product:_Name:Text
+         Else
+            lRet   := .F.
+            cXmlRet := STR0013 //"A Marca é obrigatória!"
+            IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+            Return {lRet, cXMLRet}
+         EndIf
+
+         // Verifica se a filial atual é a mesma filial de inclusão do cadastro
+         aAux := IntChcEmp(oXml, cAlias, cProduct)
+         If !aAux[1]
+           lRet := aAux[1]
+           cXmlRet := aAux[2]
+           IIf(lLog, AdpLogEAI(5, "MATI010", cXmlRet, lRet), ConOut(STR0011))
+           Return {lRet, cXmlRet}
+         EndIf
+     
+         // InternalId
+         If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_InternalId:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_InternalId:Text)
+            cValExt := oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_InternalId:Text
+         Else
+            lRet   := .F.
+            cXmlRet := STR0014 //"O código do InternalId é obrigatório!"
+            IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+            Return {lRet, cXMLRet}
+         EndIf
+
+         // Obtém o valor interno
+         aAux := IntProInt(cValExt, cProduct, /*Versão*/)
+
+         // Se o evento é Upsert
+         If cEvent == "UPSERT"
+            // Se o registro foi encontrado
+            If !aAux[1]
+               nEvento := 3 // Insert
+
+               // Código do Produto
+               If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Code:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Code:Text)
+                  cCode := PadR(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Code:Text, TamSX3("B1_COD")[1])
+                  // Armazena o Código do produto no Array
+                  aAdd(aProd, {"B1_COD", cCode, Nil})
+               Else
+                  lRet   := .F.
+                  cXmlRet := STR0015 //"O código do produto é obrigatório!"
+                  IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+                  Return {lRet, cXMLRet}
+               EndIf
+
+               // Monta o InternalId de produto que será gravado na table XXF (de/para)
+               cValInt := IntProExt(/*Empresa*/, /*Filial*/, cCode, /*Versão*/)[2]
+            Else
+               nEvento := 4 // Update
+
+               cCode := aAux[2][3]
+
+               // Armazena o Código do produto no Array
+               aAdd(aProd, {"B1_COD", PadR(cCode, TamSX3("B1_COD")[1]), Nil})
+
+               // Monta o InternalId de produto que será gravado na table XXF (de/para)
+               cValInt := IntProExt(/*Empresa*/, /*Filial*/, cCode, /*Versão*/)[2]
+            EndIf
+         // Se o evento é Delete
+         ElseIf cEvent == "DELETE"
+            // Se o registro foi encontrado
+            If aAux[1]
+               nEvento := 5 // Delete
+            Else
+               lRet := .F.
+               cXmlRet := STR0016 + " -> " + cValExt //"O registro a ser excluído não existe na base Protheus" 
+               IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+               Return {lRet, cXmlRet}
+            EndIf
+
+            cCode:= aAux[2][3]
+            // Armazena o Código do produto no Array
+            aAdd(aProd, {"B1_COD", PadR(cCode, TamSX3("B1_COD")[1]), Nil})
+
+            // Monta o InternalId de produto que será gravado na table XXF (de/para)
+            cValInt := IntProExt(/*Empresa*/, /*Filial*/, cCode, /*Versão*/)[2]
+         Else
+            lRet   := .F.
+            cXmlRet := STR0017 //"O evento informado é inválido!"
+            IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+            Return {lRet, cXMLRet}
+         EndIf
+
+         // Se o evento é diferente de Delete
+         If nEvento != 5
+            // Descrição do Produto
+            If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Name:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Name:Text)
+               aAdd(aProd, {"B1_DESC", AllTrim(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Name:Text), Nil})
+               If lDescSB5 .And. (LEN( aProd[2][2]) > TamSX3("B1_DESC")[1])
+               	 aAdd(aProdSB5, {"B5_COD", PadR(cCode, TamSX3("B1_COD")[1]), Nil})
+               	 aAdd(aProdSB5, {"B5_CEME", AllTrim(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Name:Text), Nil})
+               EndIF
+            Else
+               lRet   := .F.
+               cXmlRet := STR0018 //"A Descrição do produto é obrigatória"
+               IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+               Return {lRet, cXmlRet}
+            EndIf
+
+            // Tipo de Produto
+            If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ProductType:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ProductType:Text)
+               aAdd(aProd, {"B1_TIPO", getPType(Alltrim(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ProductType:Text), nTypeTrans), Nil})
+            Else
+               lRet := .F.
+               cXmlRet := STR0019 //"O tipo do produto é obrigatório"
+               IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+               Return {lRet, cXmlRet}
+            EndIf
+
+            // CodIte
+            If X3Obrigat("B1_CODITE")
+            	aAdd(aProd, {"B1_CODITE",PadR(cCode, TamSX3("B1_CODITE")[1]), Nil})
+            Endif
+
+            //Obtém o Código Interno da Unidade de Medida
+            If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_UnitOfMeasureInternalId:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_UnitOfMeasureInternalId:Text)
+               aAux := IntUndInt(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_UnitOfMeasureInternalId:Text, cProduct)
+               If !aAux[1]
+                  lRet := aAux[1]
+                  cXmlRet := aAux[2]
+                  IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+                  Return {lRet, cXmlRet}
+               Else
+                  cUMExt := oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_UnitOfMeasureInternalId:Text
+                  cUMInt := cValToChar(IntUndExt(/*Empresa*/, /*Filial*/, aAux[2][3], /*Versão*/)[2]) 
+                  aAdd(aProd, {"B1_UM", aAux[2][3], Nil})
+               EndIf
+            Else
+               lRet := .F.
+               cXmlRet := STR0020 //"A Unidade de Medida é obrigatória"
+               IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+               Return {lRet, cXmlRet}
+            EndIf
+
+            //Obtém o Armazém Padrão p/ requis.
+            If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StandardWarehouseInternalId:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StandardWarehouseInternalId:Text)
+               aAux := IntLocInt(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StandardWarehouseInternalId:Text, cProduct, /*Versão*/)
+               If !aAux[1]
+                  lRet := aAux[1]
+                  cXmlRet := aAux[2]
+                  IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+                  Return {lRet, cXmlRet}
+               Else
+                  cStWaExt := oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StandardWarehouseInternalId:Text
+                  cStWaInt := IntLocExt(/*Empresa*/, /*Filial*/, aAux[2][3], /*Versão*/)[2]
+                  aAdd(aProd, {"B1_LOCPAD", aAux[2][3], Nil})
+               EndIf
+            Else
+               // Obtém o primeiro Local de Estoque cadastrado
+               NNR->(DbSetOrder(1)) // NNR_FILIAL+NNR_CODIGO
+
+               If NNR->(dbSeek(xFilial("NNR")))
+                  If Empty(NNR->NNR_CODIGO)
+                     NNR->(DbSkip())
+                  EndIf
+                  aAdd(aProd, {"B1_LOCPAD", NNR->NNR_CODIGO, Nil})
+               Else
+                  lRet := .F.
+                  cXmlRet := STR0021 //"Local de Estoque não encontrado."
+                  IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+                  Return {lRet, cXmlRet}
+               EndIf
+            EndIf
+
+            // Origem do Produto
+            If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Origin:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Origin:Text)
+               aAdd(aProd, {"B1_ORIGEM", oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Origin:Text, Nil})
+            EndIf
+
+            // Nomenclatura Ext.Mercosul
+            If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_FiscalInformation:_FiscalClassification:_FiscalClassificationCode:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_FiscalInformation:_FiscalClassification:_FiscalClassificationCode:Text)
+               aAdd(aProd, {"B1_POSIPI", oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_FiscalInformation:_FiscalClassification:_FiscalClassificationCode:Text, Nil})
+            EndIf
+
+            // Segunda Unidade de Medida e Fator de Conversão
+            If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:SecondUnitOfMeasureCode:Text") != "U" .And. !Empty(oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:SecondUnitOfMeasureCode:Text)
+               If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_MultiplicationFactorValue:Text") != "U" .And. !Empty(oXmlM010:_TOTVSMessage:_BusinessMessage:_BusinessContent:_MultiplicationFactorValue:Text)
+                  aAdd(aProd, {"B1_SEGUM", oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:SecondUnitOfMeasureCode:Text, Nil})
+                  aAdd(aProd, {"B1_CONV", Val(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_MultiplicationFactorValue:Text), Nil})
+               Else
+                  lRet   := .F.
+                  cXmlRet := STR0022 //"Fator de conversão obrigatório pois existe segunda unidade de medida."
+                  IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+                  Return {lRet, cXmlRet}
+               EndIf
+            EndIf
+
+            // Rastro por Lote, Sublote ou Sem rastro
+            If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Trail:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Trail:Text)
+               aAdd(aProd, {"B1_RASTRO", oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Trail:Text, Nil})
+            EndIf
+            
+            // Localização
+            If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_BinControl:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_BinControl:Text)
+            		If oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_BinControl:Text == "1" .Or. Upper(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_BinControl:Text) == "TRUE" 
+						aAdd(aProd, {"B1_LOCALIZ", "S", Nil})
+					Else
+						aAdd(aProd, {"B1_LOCALIZ", "N", Nil})
+					EndIf
+            EndIf				
+			 
+            // Grupo de Estoque
+            If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StockGroupInternalId:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StockGroupInternalId:Text)
+            	If XX4MENS("MATA035") == "FAMILY"
+            		aAux := IntFamInt(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StockGroupInternalId:Text, cProduct, RTrim(PmsMsgUVer('FAMILY','MATA035')))
+            	Elseif XX4MENS("MATA035") == "STOCKGROUP"
+            		aAux := IntStockInt(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StockGroupInternalId:Text, cProduct, RTrim(PmsMsgUVer('STOCKGROUP','MATA035')))
+            	Endif
+            	
+            	If aAux[1]
+            		cCodGrupo := RTrim(aAux[2][3])
+            		aAdd(aProd, {"B1_GRUPO", cCodGrupo, Nil})
+            	Else
+            		If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StockGroupCode:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StockGroupCode:Text)
+            			cCodGrupo := RTrim(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_StockGroupCode:Text)
+            			aAdd(aProd, {"B1_GRUPO", cCodGrupo, Nil})
+            		Else
+            			If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_GroupInternalId:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_GroupInternalId:Text)
+		            		cCodGrupo	:= CFGA070INT( cProduct, 'SBM', 'BM_GRUPO', oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_GroupInternalId:Text) 			
+							cCodGrupo	:= MTIGetCod(cCodGrupo)
+		               
+		              	aAdd(aProd, {"B1_GRUPO", RTrim(cCodGrupo), Nil})
+		              Elseif Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_GroupCode:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_GroupCode:Text)
+		              	cCodGrupo := RTrim(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_GroupCode:Text)
+		              	aAdd(aProd, {"B1_GRUPO", RTrim(cCodGrupo), Nil})
+		            	EndIf
+		          	Endif
+		      	Endif 
+            EndIf
+            
+            // Lote mínimo
+            If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_MinimumLot:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_MinimumLot:Text)
+               aAdd(aProd, {"B1_LM", Val(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_MinimumLot:Text), Nil})
+            EndIf
+
+            // Peso Líquido
+            If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_NetWeight:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_NetWeight:Text)
+               aAdd(aProd, {"B1_PESO", Val(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_NetWeight:Text), Nil})
+            EndIf
+
+            // Último preço de compra
+            If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Values:_CostPrice:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Values:_CostPrice:Text)
+               aAdd(aProd, {"B1_UPRC", Val(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Values:_CostPrice:Text), Nil})
+            EndIf
+
+            // Preço de venda
+            If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Values:_SalesPrice:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Values:_SalesPrice:Text)
+               aAdd(aProd, {"B1_PRV1", Val(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Values:_SalesPrice:Text), Nil})
+            EndIf
+
+            // Preço médio de custo
+            If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Values:_AverageCostPrice:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Values:_AverageCostPrice:Text)
+               nAverageCostPrice := Val(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Values:_AverageCostPrice:Text)
+            EndIf
+
+            // Custo standard
+            If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Values:_StandardCostPrice:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Values:_StandardCostPrice:Text)
+               aAdd(aProd, {"B1_CUSTD", Val(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Values:_StandardCostPrice:Text), Nil})
+            EndIf
+
+            // Data do último cálculo do custo stardard
+            If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Values:_BaseDate:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Values:_BaseDate:Text)
+               dBaseDate := oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Values:_BaseDate:Text
+               dBaseDate := CToD(SubStr(dBaseDate, 9, 2) + "/" + SubStr(dBaseDate, 6, 2) + "/" + SubStr(dBaseDate, 1, 4))
+               aAdd(aProd, {"B1_UCALSTD", dBaseDate, Nil})
+            EndIf
+
+            //Ativo
+            If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Active:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Active:Text)
+               cProdActiv := AllTrim( oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_Active:Text )
+            	 
+            	 If cProdActiv == '0' .Or. Upper(cProdActiv) == 'FALSE' // Nao Ativo
+				 	aAdd( aProd, { "B1_ATIVO", 'N', Nil } )  
+					aAdd( aProd, { "B1_MSBLQL", '1', Nil } )
+				 ElseIf cProdActiv == '1' .Or. Upper(cProdActiv) == 'TRUE' // Ativo 
+					aAdd( aProd, { "B1_ATIVO", 'S', Nil } )
+					aAdd( aProd, { "B1_MSBLQL", '2', Nil } )	
+				 EndIf
+            EndIf
+            
+            //Integracao
+            aAdd(aProd, {"B1_INTEG","1",Nil})
+         EndIf
+
+         If lLog
+            AdpLogEAI(3, "aProd: ", aProd)
+            AdpLogEAI(3, "cValInt: ", cValInt)
+            AdpLogEAI(3, "cValExt: ", cValExt)
+            AdpLogEAI(4, nEvento)
+         Else
+            ConOut(STR0011)
+         EndIf
+
+         BEGIN TRANSACTION
+
+         If nEvento == 5 // Delete
+            // Obtém o resultado da função que faz a amarraçãoo do Produto x Cliente
+            aProdCli := prodCli(cCode, cProduct, nEvento)
+
+            If aProdCli[1][1] // Exclusão dos filhos ocorreu com sucesso?
+               // Exclui o pai
+               MSExecAuto({|x, y| MATA010(x, y)}, aProd, nEvento)
+            Else
+               DisarmTransaction()
+
+               lRet := .F.
+               cXmlRet := aProdCli[1][2]
+               IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+               Return {lRet, cXmlRet}
+            EndIf
+         Else // Insert or Update
+            MSExecAuto({|x, y| MATA010(x, y)}, aProd, nEvento)
+         EndIf
+
+         // Se houve erros no processamento do MSExecAuto
+         If lMsErroAuto
+            aErroAuto := GetAutoGRLog()
+
+            cXmlRet := "<![CDATA["
+            For nCount := 1 To Len(aErroAuto)
+               cXmlRet += aErroAuto[nCount] + Chr(10)
+            Next nCount
+            cXmlRet += "]]>"
+
+            DisarmTransaction()
+
+            lRet := .F.
+            IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+            Return {lRet, cXMLRet}
+         Else        	           
+           //Validação para o caso de precisar SB5
+           If nEvento!=5 .and. lDescSB5 .And. (LEN( aProd[2][2]) > TamSX3("B1_DESC")[1])
+				 nEventoSB5 := nEvento
+				
+				aAreaAnt := GetArea()
+				
+				dbSelectArea("SB5")
+				SB5->(dbSetOrder(1)) // B5_FILIAL + B5_COD
+				
+				// validar exclusão não se faz necessario por rotina padrão exclui automaticamente
+				If nEvento == 4 .And. !(SB5->(MSseek( xFilial("SB5") + aProd [1][2])))
+					nEventoSB5 := 3
+				EndIf
+				
+				RestArea(aAreaAnt)
+	         	// execulta a rotina auto. para preencher o SB5
+	         	MSExecAuto({|x, y| MATA180(x, y)}, aProdSB5, nEventoSB5)
+	         	
+					If lMsErroAuto
+
+						aErroAuto := GetAutoGRLog()
+		
+						cXmlRet := "<![CDATA["
+						For nCount := 1 To Len(aErroAuto)
+							cXmlRet += aErroAuto[nCount] + Chr(10)
+						Next nCount
+						cXmlRet += "]]>"
+		
+						DisarmTransaction()
+		
+						lRet := .F.
+						Return {lRet, cXMLRet}
+					EndIf
+	        EndIF
+         
+            // Se o evento é diferente de Delete
+            If nEvento != 5
+               // Obtém o resultado da função que faz a amarraçãoo do Produto x Cliente
+               aProdCli := prodCli(cCode, cProduct, nEvento)
+
+               // Amarração Produto x Cliente ocorreu com sucesso?
+               If aProdCli[1][1]
+                  // Grava na Tabela XXF (de/para)
+                  CFGA070Mnt(cProduct, cAlias, cField, cValExt, cValInt )
+
+                  dbSelectArea("SB2")
+                  SB2->(dbSetOrder(1))
+
+                  If nEvento == 3 // Insere registros na SB2 | OBS: UPDATE e DELETE são executados pela rotina automática
+                     RecLock("SB2", .T.)
+                     SB2->B2_FILIAL := xFilial("SB2")
+                     SB2->B2_COD    := cCode
+                     SB2->B2_LOCAL  := cStandardWarehouseCode
+                     SB2->B2_CM1    := nAverageCostPrice
+                     MsUnLock()
+                  EndIf
+               Else // Amarração Produto x Cliente retornou erro
+                  DisarmTransaction()
+
+                  lRet   := .F.
+                  cXmlRet := aProdCli[1][2]
+                  IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+                  Return {lRet, cXmlRet}
+               EndIf
+            Else
+               // Exclui na Tabela XXF (de/para)
+               CFGA070Mnt(cProduct, cAlias, cField, cValExt, cValInt, .T.)
+            EndIf
+            
+            cXMLRet := "<ListOfInternalId>"
+            cXMLRet +=    "<InternalId>"
+            cXMLRet +=       "<Name>ItemInternalId</Name>"
+            cXMLRet +=       "<Origin>" + cValExt + "</Origin>"
+            cXMLRet +=       "<Destination>" + cValInt + "</Destination>"
+            cXMLRet +=    "</InternalId>"
+            If nEvento == 5 // Delete
+               cXMLRet += "</ListOfInternalId>"
+            Else
+               cXMLRet +=    "<InternalId>"
+               cXMLRet +=       "<Name>UnitOfMeasureInternalId</Name>"
+               cXMLRet +=       "<Origin>" + cUMExt + "</Origin>"
+               cXMLRet +=       "<Destination>" + cUMInt + "</Destination>"
+               cXMLRet +=    "</InternalId>"
+               cXMLRet +=    "<InternalId>"
+               cXMLRet +=       "<Name>StandardWarehouseInternalId</Name>"
+               cXMLRet +=       "<Origin>" + cStWaExt + "</Origin>"
+               cXMLRet +=       "<Destination>" + cStWaInt + "</Destination>"
+               cXMLRet +=    "</InternalId>"
+               cXMLRet += "</ListOfInternalId>"
+            EndIf
+         EndIf
+
+         END TRANSACTION
+      ElseIf cTypeMessage == EAI_MESSAGE_RESPONSE
+         // Se não houve erros na resposta
+         If Upper(oXML:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_Status:Text) == "OK"
+            // Verifica se a marca foi informada
+            If Type("oXML:_TOTVSMessage:_MessageInformation:_Product:_name:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_MessageInformation:_Product:_name:Text)
+               cProduct := oXml:_TOTVSMessage:_MessageInformation:_Product:_name:Text
+            Else
+               lRet    := .F.
+               cXmlRet := STR0023 //"Erro no retorno. O Product é obrigatório!"
+               IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+               Return {lRet, cXmlRet}
+            EndIf
+
+            // Se não for array
+            If Type("oXML:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ListOfInternalId:_InternalId") != "A"
+               // Transforma em array
+               XmlNode2Arr(oXML:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ListOfInternalId:_InternalId, "_InternalId")
+            EndIf
+
+            // Verifica se o código interno foi informado
+            If Type("oXML:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ListOfInternalId:_InternalId[1]:_Origin:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ListOfInternalId:_InternalId[1]:_Origin:Text)
+               cValInt := oXML:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ListOfInternalId:_InternalId[1]:_Origin:Text
+            Else
+               lRet    := .F.
+               cXmlRet := STR0024 //"Erro no retorno. O OriginalInternalId é obrigatório!"
+               IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+               Return {lRet, cXmlRet}
+            EndIf
+
+            // Verifica se o código externo foi informado
+            If Type("oXML:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ListOfInternalId:_InternalId[1]:_Destination:Text") != "U" .And. !Empty(oXML:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ListOfInternalId:_InternalId[1]:_Destination:Text)
+               cValExt := oXML:_TOTVSMessage:_ResponseMessage:_ReturnContent:_ListOfInternalId:_InternalId[1]:_Destination:Text
+            Else
+               lRet    := .F.
+               cXmlRet := STR0025 //"Erro no retorno. O DestinationInternalId é obrigatório!"
+               IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+               Return {lRet, cXmlRet}
+            EndIf
+
+            // Obtém a mensagem original enviada
+            If Type("oXML:_TOTVSMessage:_ResponseMessage:_ReceivedMessage:_MessageContent:Text") != "U" .And. !Empty(oXml:_TOTVSMessage:_ResponseMessage:_ReceivedMessage:_MessageContent:Text)
+               cXML := oXml:_TOTVSMessage:_ResponseMessage:_ReceivedMessage:_MessageContent:Text
+            Else
+               lRet    := .F.
+               cXmlRet := STR0026 //"Conteúdo do MessageContent vazio!"
+               IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+               Return {lRet, cXmlRet}
+            EndIf
+
+            If lLog
+               AdpLogEAI(3, "cValInt: ", cValInt)
+               AdpLogEAI(3, "cValExt: ", cValExt)
+            Else
+               ConOut(STR0011)
+            EndIf
+
+            // Faz o parse do XML em um objeto
+            oXML := XmlParser(cXML, "_", @cError, @cWarning)
+
+            // Se não houve erros no parse
+            If oXML != Nil .And. Empty(cError) .And. Empty(cWarning)
+               If Upper(oXML:_TOTVSMessage:_BusinessMessage:_BusinessEvent:_Event:Text) == "UPSERT"
+                  // Insere / Atualiza o registro na tabela XXF (de/para)
+                  CFGA070Mnt(cProduct, cAlias, cField, cValExt, cValInt, .F.)
+               ElseIf Upper(oXML:_TOTVSMessage:_BusinessMessage:_BusinessEvent:_Event:Text) == "DELETE"
+                  // Exclui o registro na tabela XXF (de/para)
+                  CFGA070Mnt(cProduct, cAlias, cField, cValExt, cValInt, .T.)
+               Else
+                  lRet := .F.
+                  cXmlRet := STR0027 //"Evento do retorno inválido!"
+               EndIf
+            Else
+               lRet := .F.
+               cXmlRet := STR0033 //"Erro no parser do retorno!"
+               IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+               Return {lRet, cXmlRet}
+            EndIf
+         Else
+            // Se não for array
+            If Type("oXML:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_ListOfMessages:_Message") != "A"
+               // Transforma em array
+               XmlNode2Arr(oXML:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_ListOfMessages:_Message, "_Message")
+            EndIf
+
+            // Percorre o array para obter os erros gerados
+            For nCount := 1 To Len(oXML:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_ListOfMessages:_Message)
+               cError := oXML:_TOTVSMessage:_ResponseMessage:_ProcessingInformation:_ListOfMessages:_Message[nCount]:Text + Chr(10)
+            Next nCount
+
+            lRet := .F.
+            cXmlRet := cError
+         EndIf
+      ElseIf cTypeMessage == EAI_MESSAGE_WHOIS
+         cXmlRet := '1.000|1.001|2.000|2.001'
+      Endif
+   ElseIf nTypeTrans == TRANS_SEND
+      // Verifica se é uma exclusão
+      If !Inclui .And. !Altera
+         cEvent := 'delete'
+      Else
+         cEvent := 'upsert'
+      EndIf
+
+      // Monta XML de envio de mensagem unica
+      cXMLRet := '<BusinessEvent>'
+      cXMLRet +=    '<Entity>' + cEntity + '</Entity>'
+      cXMLRet +=    '<Event>' + cEvent + '</Event>'
+      cXMLRet +=    '<Identification>'
+      cXMLRet +=       '<key name="InternalID">' + IntProExt(/*Empresa*/, /*Filial*/, SB1->B1_COD, /*Versão*/)[2] + '</key>'
+      cXMLRet +=    '</Identification>'
+      cXMLRet += '</BusinessEvent>'
+      cXMLRet += '<BusinessContent>'
+      cXMLRet +=    '<CompanyId>' + cEmpAnt + '</CompanyId>'
+      cXMLRet +=    '<BranchId>' + cFilAnt + '</BranchId>'
+      cXMLRet +=    '<CompanyInternalId>' + cEmpAnt + '|' + cFilAnt + '</CompanyInternalId>'
+      cXMLRet +=    '<Code>' + AllTrim(SB1->B1_COD) + '</Code>'
+      cXMLRet +=    '<InternalId>' + IntProExt(/*Empresa*/, /*Filial*/, SB1->B1_COD, /*Versão*/)[2] + '</InternalId>'
+      cXMLRet +=    '<Name>' + _NoTags(AllTrim(SB1->B1_DESC)) + '</Name>'
+      cXMLRet +=    '<ShortName>' + _NoTags(AllTrim(SB1->B1_DESC)) + '</ShortName>' 
+      cXMLRet +=    '<Active>' + IIf(SB1->B1_ATIVO == "N", "0", "1") + '</Active>'
+      If !Empty(SB1->B1_GRUPO)
+         cXMLRet +=    '<StockGroupCode>' + AllTrim(SB1->B1_GRUPO) + '</StockGroupCode>'
+
+         aFAMSTOCK := A010GRPPRD()
+         If aFAMSTOCK[1] == "FAMILY"
+         	cXMLRet +=    '<StockGroupInternalId>' + IntFamExt(/*cEmpresa*/,/*cFil*/,AllTrim(SB1->B1_GRUPO),aFAMSTOCK[2])[2] + '</StockGroupInternalId>'
+         Elseif aFAMSTOCK[1] == "STOCKGROUP"
+         	cXMLRet +=    '<StockGroupInternalId>' + IntStockExt(/*cEmpresa*/,/*cFil*/,AllTrim(SB1->B1_GRUPO),aFAMSTOCK[2])[2] + '</StockGroupInternalId>'
+         Else
+         	cXMLRet +=    '<StockGroupInternalId>' + cEmpAnt + "|" + AllTrim(xFilial("SBM")) + "|" + AllTrim(SB1->B1_GRUPO) + '</StockGroupInternalId>'
+         Endif
+
+         cXMLRet +=    '<StockGroupDescription>' + AllTrim(getGProd(SB1->B1_GRUPO)) + '</StockGroupDescription>'
+      EndIf
+      cXMLRet +=    '<UnitOfMeasureCode>' + SB1->B1_UM + '</UnitOfMeasureCode>'
+      cXMLRet +=    '<UnitOfMeasureInternalId>' + IntUndExt(/*cEmpresa*/, /*cFilial*/, SB1->B1_UM)[2] + '</UnitOfMeasureInternalId>'
+      cXMLRet +=    '<StandardWarehouseCode>' + RTrim(SB1->B1_LOCPAD) + '</StandardWarehouseCode>'
+      cXMLRet +=    '<StandardWarehouseInternalId>' + IntLocExt(/*Empresa*/, /*Filial*/, SB1->B1_LOCPAD, /*Versão*/)[2] + '</StandardWarehouseInternalId>'
+      cXMLRet +=    '<StandardWarehouseDescription>' + DscLocEs(SB1->B1_LOCPAD) + '</StandardWarehouseDescription>'
+      cXMLRet +=    '<EconomicLot>' + cValToChar(SB1->B1_LE) + '</EconomicLot>'
+      cXMLRet +=    '<MinimumLot>' + cValToChar(SB1->B1_LM) + '</MinimumLot>'
+      cXMLRet +=    '<NetWeight>' + cValToChar(SB1->B1_PESO) + '</NetWeight>'
+      cXMLRet +=    '<GrossWeight>' + cValToChar(SB1->B1_PESBRU) +  '</GrossWeight>'
+      cXMLRet +=    '<Origin>' + AllTrim(SB1->B1_ORIGEM) + '</Origin>'
+      If !Empty(SB1->B1_FPCOD)
+         cXMLRet +=    '<FamilyCode>' + RTrim(SB1->B1_FPCOD) + '</FamilyCode>'
+         cXMLRet +=    '<FamilyInternalId>' + cEmpAnt + '|' + RTrim(xFilial("SYC")) + '|' + RTrim(SB1->B1_FPCOD) + '</FamilyInternalId>'
+         cXMLRet +=    '<FamilyDescription>' + DscFam(SB1->B1_FPCOD) + '</FamilyDescription>'
+      EndIf
+      If !Empty(SB1->B1_POSIPI)
+         cXMLRet += '<FiscalInformation>'
+         cXMLRet +=    '<FiscalClassification>'
+         cXMLRet +=       '<Code>' + RTrim(SB1->B1_POSIPI) + '</Code>'
+         cXMLRet +=       '<FiscalClassificationInternalId>' + RTrim(SB1->B1_POSIPI) + '</FiscalClassificationInternalId>'
+         cXMLRet +=       '<Description>' + DscNCM(SB1->B1_POSIPI) + '</Description>'
+         cXMLRet +=    '</FiscalClassification>'
+         cXMLRet += '</FiscalInformation>'
+      EndIf
+      cXMLRet +=    '<ProductType>' + getPType(SB1->B1_TIPO, nTypeTrans) + '</ProductType>'
+      cXMLRet +=    '<Trail>' + RTrim(SB1->B1_RASTRO) + '</Trail>'
+      cXMLRet +=    '<BinControl>' + If(SB1->B1_LOCALIZ == "S","True","False") + '</BinControl>'
+      If !Empty(SB1->B1_CONTA)
+	     cXMLRet +=    '<AccountantAccountCode>' + RTrim(SB1->B1_CONTA) + '</AccountantAccountCode>'
+      EndIf
+      If !Empty(SB1->B1_SEGUM)
+         cXMLRet +=    '<SecondUnitOfMeasure>' + RTrim(SB1->B1_SEGUM) + '</SecondUnitOfMeasure>'
+         cXMLRet +=    '<SecondUnitOfMeasureInternalId>' + IntUndExt(/*cEmpresa*/, /*cFilial*/, SB1->B1_SEGUM)[2] + '</SecondUnitOfMeasureInternalId>'
+      EndIf
+      cXMLRet +=    '<MultiplicationFactorValue>' + iIf(SB1->B1_TIPCONV == 'M', cValToChar(SB1->B1_CONV), cValToChar(1 / SB1->B1_CONV)) + '</MultiplicationFactorValue>'
+
+      dbSelectArea("SBZ") //Indicadores de Produtos
+      SBZ->(dbSetOrder(1)) //BZ_FILIAL+BZ_COD
+      aAreaAnt := GetArea()
+
+      If GetNewPar("MV_SLMSBZ", 0) == 1 // Considera tabela SBZ ou não para dados do produto (0 - NAO ; 1 - SIM)
+         If SBZ->(msSeek(PadR(SB1->B1_FILIAL, TamSX3("BZ_FILIAL")[1]) + PadR(SB1->B1_COD, TamSX3("BZ_COD")[1])))
+            nPrecoCusto  := SBZ->BZ_UPRC
+            nCustoPadrao := SBZ->BZ_CUSTD
+            dDataBase    := SBZ->BZ_UCALSTD
+         Else
+            nPrecoCusto  := SB1->B1_UPRC
+            nCustoPadrao := SB1->B1_CUSTD
+            dDataBase    := SB1->B1_UCALSTD
+         EndIf
+      Else
+         nPrecoCusto  := SB1->B1_UPRC
+         nCustoPadrao := SB1->B1_CUSTD
+         dDataBase    := SB1->B1_UCALSTD
+      EndIf
+
+      RestArea(aAreaAnt)
+
+      dbSelectArea("SB2") //Saldos Físico e Financeiro
+      SB2->(dbSetOrder(1)) //B2_FILIAL+B2_COD+B2_LOCAL
+      aAreaAnt := GetArea()
+
+      If SB2->(msSeek(PadR(SB1->B1_FILIAL, TamSX3("B2_FILIAL")[1]) + PadR(SB1->B1_COD, TamSX3("B2_COD")[1]) + PadR(SB1->B1_LOCPAD, TamSX3("B2_LOCAL")[1])))
+         nCustoMedio := SB2->B2_CM1
+      Else
+         nCustoMedio := 0.0
+      EndIf
+
+      RestArea(aAreaAnt)
+
+      cXMLRet +=    '<Values>'
+      cXMLRet +=       '<CostPrice>' + AllTrim(cValToChar(nPrecoCusto)) + '</CostPrice>'
+      cXMLRet +=       '<SalesPrice>' + AllTrim(cValToChar(SB1->B1_PRV1)) + '</SalesPrice>'
+      cXMLRet +=       '<AverageCostPrice>' + AllTrim(cValToChar(nCustoMedio)) + '</AverageCostPrice>'
+      cXMLRet +=       '<StandardCostPrice>' + AllTrim(cValToChar(nCustoPadrao)) + '</StandardCostPrice>'
+      If !Empty(dDataBase)
+         cXMLRet +=    '<BaseDate>' + SubStr(DToC(dDataBase), 7, 4) + '-' + SubStr(DToC(dDataBase), 4, 2) + '-' + SubStr(DToC(dDataBase), 1, 2) + '</BaseDate>'
+      EndIf
+      cXMLRet +=    '</Values>'
+
+      dbSelectArea("SA7")
+      SA7->(dbSetOrder(2)) // A7_FILIAL + A7_PRODUTO + A7_CLIENTE + A7_LOJA
+      aAreaAnt := GetArea()
+
+      If SA7->(MsSeek(xFilial("SA7") + SB1->B1_COD))
+         cXMLRet += '<ListOfCustomerItemInformation>'
+
+         While !SA7->(EOF()) .And. SA7->A7_PRODUTO == SB1->B1_COD
+            cXMLRet += '<CustomerItemInformation>' 
+            cXMLRet +=    '<CustomerCode>' + SA7->A7_CLIENTE + '</CustomerCode>'
+            cXMLRet +=    '<CustomerInternalId>' + IntCliExt(/*Empresa*/, /*Filial*/, SA7->A7_CLIENTE, SA1->A1_LOJA, /*Versão*/)[2] + '</CustomerInternalId>'
+            cXMLRet +=    '<CustomerItemCode>' + SA7->A7_CODCLI + '</CustomerItemCode>'
+            cXMLRet +=    '<CustomerItemInternalId>' + IntProExt(/*Empresa*/, /*Filial*/, SA7->A7_CODCLI, /*Versão*/)[2] + '</CustomerItemInternalId>'
+            cXMLRet += '</CustomerItemInformation>'
+
+            SA7->(dbSkip())
+         EndDo
+         cXMLRet += '</ListOfCustomerItemInformation>'
+      EndIf
+
+      RestArea(aAreaAnt)
+
+      cXMLRet += '</BusinessContent>'
+   EndIf
+
+   IIf(lLog, AdpLogEAI(5, "MATI010", cXMLRet, lRet), ConOut(STR0011))
+Return {lRet, cXmlRet}
+
+// --------------------------------------------------------------------------------------
+/*/{Protheus.doc} prodCli
+Faz a amarração do Produto x Cliente (SA7) 
+
+@param   cCode    Código do Produto
+@param   cProduct Marca (RM, Protheus, Microsiga, etc)
+@param   nEvento  Evento ocorrido no CRUD do Produto
+
+@author  Leandro Luiz da Cruz
+@version P11
+@since   04/01/2013
+@return  cResult Variável com o valor obtido
+/*/
+// --------------------------------------------------------------------------------------
+
+Static Function prodCli(cCode, cProduct, nEvento, cVersao, cDescPro, oXmlM010)
+   Local aAreaAnt := GetArea()
+   Local aResult  := {}
+   Local nI       := 0
+   Local nCount   := 0
+   Local cCliExt  := ""
+   Local cCliInt  := ""
+   Local cCodCli  := ""
+   Local cLojCli  := ""
+   Local cCodPro  := ""
+   Local aCabAux  := {} 
+   Local lPesq    := Nil
+   Default cVersao := "2.000"
+
+   aAdd(aResult,{.T.,""})
+
+   If nEvento != 5   
+		If cVersao == "1.000"
+			oXML := oXmlM010
+		Endif
+      dbSelectArea("SA7")
+      SA7->(dbSetOrder(1)) // A7_FILIAL + A7_CLIENTE + A7_LOJA + A7_PRODUTO
+
+      If Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCustomerItemInformation:_CustomerItemInformation") != "U" .And. !Empty(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCustomerItemInformation:_CustomerItemInformation)
+         // Se não é array
+         If ValType(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCustomerItemInformation:_CustomerItemInformation) != "A"
+            // Transforma em array
+            XmlNode2Arr(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCustomerItemInformation:_CustomerItemInformation, "_CustomerItemInformation")
+         EndIf
+
+         // Percorre o array para execução do CRUD 
+         For nCount := 1 To Len(oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCustomerItemInformation:_CustomerItemInformation)
+            If cVersao == "1.000"
+               lPesq := Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCustomerItemInformation:_CustomerItemInformation["+Str(nCount)+"]:_CustomerCode:Text") <> "U" .And. ;
+            	 			Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCustomerItemInformation:_CustomerItemInformation["+Str(nCount)+"]:_CustomerItemCode:Text") <> "U"
+            Else
+            	 lPesq := Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCustomerItemInformation:_CustomerItemInformation["+Str(nCount)+"]:_CustomerInternalId:Text") <> "U" .And. ;
+            	 			Type("oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCustomerItemInformation:_CustomerItemInformation["+Str(nCount)+"]:_CustomerItemInternalId:Text") <> "U"
+            Endif
+         	
+            If lPesq
+               // Obtém o cliente externo
+               If cVersao == "1.000"
+               	cCliExt := oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCustomerItemInformation:_CustomerItemInformation[nCount]:_CustomerCode:Text
+               Else
+               	cCliExt := oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCustomerItemInformation:_CustomerItemInformation[nCount]:_CustomerInternalId:Text
+               Endif
+
+               // Obtém o cliente interno na tabela XXF (de/para)
+               aAux := IntCliInt(cCliExt, cProduct, cVersao)
+
+               // Se o cliente não foi encontrato na tabela de/para
+               If !aAux[1]
+                  aResult := {}
+                  aAdd(aResult, {.F., STR0028 + cCliExt + STR0029, NIL}) //"O cliente " " não está cadastrado na base Protheus."
+                  Return aResult
+               Else
+                  If cVersao == "1.000"
+	                  // Obtém o Código do Cliente da chave interna
+	                  cCodCli := aAux[2][1]
+	                  // Obtém a Loja do Cliente da chave interna
+	                  cLojCli := aAux[2][2]
+					 Else
+					 	// Obtém o Código do Cliente da chave interna
+	                  cCodCli := aAux[2][3]
+	                  // Obtém a Loja do Cliente da chave interna
+	                  cLojCli := aAux[2][4]
+					 Endif
+                  aCabAux := {}
+
+                  // Popula array
+                  aAdd(aCabAux, {"A7_CLIENTE", cCodCli, NIL}) // Código do Cliente
+                  aAdd(aCabAux, {"A7_LOJA",    cLojCli, NIL}) // Loja do Cliente
+                  aAdd(aCabAux, {"A7_PRODUTO", cCode,   NIL}) // Código do Produto
+                  If cVersao == "1.000"
+                  	Aadd( aCabAux, {"A7_CODCLI"  ,oXml:_TOTVSMessage:_BusinessMessage:_BusinessContent:_ListOfCustomerItemInformation:_CustomerItemInformation[nCount]:_CustomerItemCode:Text , NIL }) 
+						Aadd( aCabAux, {"A7_DESCCLI" ,cDescPro, NIL })
+					Endif
+
+                  If SA7->(dbSeek(xFilial("SA7") + cCodCli + cLojCli + cCode))
+                     // Update
+                     RecLock("SA7", .F.)
+
+                     For nI:= 1 To Len(aCabAux)
+                        SA7->&(aCabAux[nI][1]) := aCabAux[nI][2]
+                     next nI
+
+                     SA7->A7_FILIAL := xFilial("SA7")
+                     MsUnLock()
+                  Else
+                     // Insert
+                     RecLock("SA7", .T.)
+
+                     For nI := 1 To Len(aCabAux)
+                        SA7->&(aCabAux[nI][1]) := aCabAux[nI][2]
+                     Next nI
+
+                     SA7->A7_FILIAL := xFilial("SA7")
+                     MsUnLock()
+                  EndIf
+               EndIf
+            EndIf
+         Next nCount
+      EndIf
+   Else
+      dbSelectArea("SA7")
+      SA7->(dbSetOrder(2)) // A7_FILIAL + A7_PRODUTO
+
+      cCode := Padr(cCode, TamSX3('A7_PRODUTO')[1])
+
+      If(SA7->(dbSeek(xFilial("SA7") + cCode)))
+         //Delete
+         RecLock("SA7", .F.)
+
+         While SA7->(!EOF()) .And. SA7->A7_FILIAL + SA7->A7_PRODUTO == xFilial("SA7") + cCode
+            dbDelete()
+            SA7->(DbSkip())
+         EndDo
+
+         MsUnLock()
+      EndIf
+   EndIf
+
+   RestArea(aAreaAnt)
+Return aResult
+
+// --------------------------------------------------------------------------------------
+/*/{Protheus.doc} getPType
+Faz o de/para do Tipo de Produto 
+
+@param   cTipo      Tipo de Produto
+@param   nTypeTrans Tipo da transação
+
+@author  Leandro Luiz da Cruz
+@version P11
+@since   20/12/2012
+@return  cResult Variavel com o valor obtido
+/*/
+// --------------------------------------------------------------------------------------
+Static Function getPType(cTipo, nTypeTrans)
+   Local cResult := ""
+
+   If nTypeTrans == TRANS_RECEIVE
+      Do Case
+         Case cTipo == "01"
+            cResult := "AI" // ATIVO IMOBILIZADO
+         Case cTipo == "02"
+            cResult := "BN" // BENEFICIAMENTO
+         Case cTipo == "03"
+            cResult := "EM" // EMBALAGEM
+         Case cTipo == "04"
+            cResult := "GG" // GASTOS GERAIS
+         Case cTipo == "05"
+            cResult := "MC" // MATERIAIS DE CONSUMO
+         Case cTipo == "06"
+            cResult := "ME" // MERCADORIA
+         Case cTipo == "07"
+            cResult := "MO" // MÃO DE OBRA
+         Case cTipo == "08"
+            cResult := "MP" // MATÉRIA PRIMA
+         Case cTipo == "09"
+            cResult := "OI" // OUTROS INSUMOS
+         Case cTipo == "10"
+            cResult := "PA" // PRODUTO ACABADO
+         Case cTipo == "11"
+            cResult := "PI" // PRODUTO INTERMEDIÁRIO
+         Case cTipo == "12"
+            cResult := "PP" // PRODUTO EM PROCESSO
+         Case cTipo == "13"
+            cResult := "PV" // PRODUTO VEÍCULO
+         Case cTipo == "14"
+            cResult := "SL" // SELO DE CONTROLE
+         Case cTipo == "15"
+            cResult := "SP" // SUBPRODUTO
+		  Case cTipo == "16"
+            cResult := "IA" // INSUMO AGRICOLA
+		  Case cTipo == "17"
+            cResult := "MM" // MATERIAIS MANFRO
+		  Case cTipo == "18"
+            cResult := "IN" // PRODUTOS INDUSTRIAIS
+		  Case cTipo == "19"
+            cResult := "II" // INSUMO INDUSTRIAIS
+		  Case cTipo == "20"
+            cResult := "SV" // SERVIÇO
+		  Case cTipo == "21"
+            cResult := "GN" // GENERICO
+      EndCase
+   ElseIf nTypeTrans == TRANS_SEND
+      Do Case
+         Case cTipo == "AI" // ATIVO IMOBILIZADO
+            cResult := "01"
+         Case cTipo == "BN" // BENEFICIAMENTO
+            cResult := "02"
+         Case cTipo == "EM" // EMBALAGEM
+            cResult := "03"
+         Case cTipo == "GG" // GASTOS GERAIS
+            cResult := "04"
+         Case cTipo == "MC" // MATERIAIS DE CONSUMO
+            cResult := "05"
+         Case cTipo == "ME" // MERCADORIA
+            cResult := "06"
+         Case cTipo == "MO" // MÃO DE OBRA
+            cResult := "07"
+         Case cTipo == "MP" // MATÉRIA PRIMA
+            cResult := "08"
+         Case cTipo == "OI" // OUTROS INSUMOS
+            cResult := "09"
+         Case cTipo == "PA" // PRODUTO ACABADO
+            cResult := "10"
+         Case cTipo == "PI" // PRODUTO INTERMEDIÁRIO
+            cResult := "11"
+         Case cTipo == "PP" // PRODUTO EM PROCESSO
+            cResult := "12"
+         Case cTipo == "PV" // PRODUTO VEÍCULO
+            cResult := "13"
+         Case cTipo == "SL" // SELO DE CONTROLE
+            cResult := "14"
+         Case cTipo == "SP" // SUBPRODUTO
+            cResult := "15"
+	  	  Case cTipo == "IA" // INSUMO AGRICOLA
+            cResult := "16" 
+		  Case cTipo == "MM" // MATERIAIS MANFRO
+            cResult := "17" 
+		  Case cTipo == "IN" // PRODUTOS INDUSTRIAIS
+            cResult := "18" 
+		  Case cTipo == "II" // INSUMO INDUSTRIAIS
+            cResult := "19" 
+		  Case cTipo == "SV" // SERVIÇO
+            cResult := "20" 
+		  Case cTipo == "GN" // GENERICO
+            cResult := "21" 
+      EndCase
+   EndIf
+Return cResult
+
+// --------------------------------------------------------------------------------------
+/*/{Protheus.doc} getGProd
+Busca a descrição do Grupo de Produtos 
+
+@param   cGrupo Código do Grupo de Produtos
+
+@author  Leandro Luiz da Cruz
+@version P11
+@since   19/12/2012
+@return  cResult Variavel com o valor obtido
+/*/
+// --------------------------------------------------------------------------------------
+Static Function getGProd(cGrupo)
+   Local cResult  := ""
+   Local aAreaAnt := GetArea()
+
+   dbSelectArea("SBM")
+   SBM->(dbSetOrder(1))
+
+   If !Empty(cGrupo) .And. SBM->(dbSeek(xFilial("SBM") + cGrupo))
+      cResult := SBM->BM_DESC
+   EndIf
+
+   RestArea(aAreaAnt)
+Return cResult
+
+// --------------------------------------------------------------------------------------
+/*/{Protheus.doc} DscLocEs
+Obtem a descrição do Local de Estoque
+
+@param cCod Codigo do Local de Estoque 
+
+@author  Leandro Luiz da Cruz
+@version P11
+@since   19/12/2012 - 15:22
+@return  cResult Variavel com o valor obtido
+/*/
+// --------------------------------------------------------------------------------------
+
+Static Function DscLocEs(cCod)
+   Local cResult  := ""
+   Local aAreaAnt := GetArea()
+
+   // Altera área
+   DbSelectArea("NNR")
+   NNR->(DbSetOrder(1)) // NNR_FILIAL + NNR_CODIGO
+
+   // Obtém o nome do Local de Estoque conforme índice informado
+   If NNR->(dbSeek(xFilial("NNR") + cCod))
+      cResult := AllTrim(NNR->NNR_DESCRI)
+   EndIf
+
+   // Restaura área anterior
+   RestArea(aAreaAnt)
+Return cResult
+
+// --------------------------------------------------------------------------------------
+/*/{Protheus.doc} DscNCM
+Obtem a descrição do NCM
+
+@param   cCod Codigo do NCM
+@author  Mateus Gustavo de Freitas e Silva
+@version P11
+@since   02/01/2013
+@return  cResult Variavel com o valor obtido
+/*/
+// --------------------------------------------------------------------------------------
+
+Static Function DscNCM(cCod)
+   Local cResult  := ""
+   Local aAreaAnt := GetArea() 
+
+   // Abre a tabela de NCM
+   DbSelectArea("SYD")
+   SYD->(DbSetOrder(1)) // YD_FILIAL+YD_TEC+YD_EX_NCM+YD_EX_NBM
+
+   // Obtém o nome do NCM conforme índice informado
+   If SYD->(msSeek(xFilial("SYD") + PadR(cCod, TamSX3("YD_TEC")[1])))
+      cResult := AllTrim(SYD->YD_DESC_P)
+   EndIf
+
+   // Restaura área anterior
+   RestArea(aAreaAnt)
+Return cResult
+
+// --------------------------------------------------------------------------------------
+/*/{Protheus.doc} DscFam
+Obtém a descrição da Família de Produtos
+
+@param   cCod Código da Família
+@author  Leandro Luiz da Cruz
+@version P11
+@since   02/01/2013
+@return  cResult Variável com o valor obtido
+/*/
+// --------------------------------------------------------------------------------------
+
+Static Function DscFam(cCod)
+   Local cResult  := ""
+   Local aAreaAnt := GetArea()
+
+   // Abre a tabela de Família de Produtos
+   DbSelectArea("SYC")
+   SYC->(DbSetOrder(1)) // YC_FILIAL + YC_COD
+
+   // Obtém o nome da Família de Produtos conforme índice informado
+   If SYC->(msSeek(xFilial("SYC") + PadR(cCod, TamSX3("YC_COD")[1])))
+      cResult := AllTrim(SYC->YC_NOME)
+   EndIf
+
+   // Restaura área anterior
+   RestArea(aAreaAnt)
+Return cResult
+
+//-------------------------------------------------------------------
+/*/{Protheus.doc} IntProExt
+Monta o InternalID do Produto de acordo com o código passado no
+parâmetro.
+
+@param   cEmpresa Código da empresa (Default cEmpAnt)
+@param   cFil     Código da Filial (Default cFilAnt)
+@param   cProduto Código do Produto
+@param   cVersao  Versão da mensagem única (Default 2.001)
+
+@author  Leandro Luiz da Cruz
+@version P11
+@since   08/02/2013
+@return  aResult Array contendo no primeiro parâmetro uma variável
+         lógica indicando se o registro foi encontrado.
+         No segundo parâmetro uma variável string com o InternalID
+         montado.
+
+@sample  IntProExt(, , '00001') irá retornar {.T., '01|01|00001'}
+/*/
+//-------------------------------------------------------------------
+Function IntProExt(cEmpresa, cFil, cProduto, cVersao)
+   Local   aResult  := {}
+   Default cEmpresa := cEmpAnt
+   Default cFil     := xFilial('SB1')
+   Default cVersao  := '2.001'
+
+   If cVersao == '1.000' .Or. cVersao == '1.001'
+      aAdd(aResult, .T.)
+      aAdd(aResult, PadR(cProduto, TamSX3('B1_COD')[1]))
+   ElseIf cVersao == '2.000' .Or. cVersao == '2.001'
+      aAdd(aResult, .T.)
+      aAdd(aResult, cEmpresa + '|' + RTrim(cFil) + '|' + RTrim(cProduto))
+   Else
+      aAdd(aResult, .F.)
+      aAdd(aResult, STR0030 + Chr(10) + STR0031) //"Versão do produto não suportada." "As versões suportadas são: 1.000, 1.001, 2.000, 2.001"
+   EndIf
+Return aResult
+
+//-------------------------------------------------------------------
+/*/{Protheus.doc} IntProInt
+Recebe um InternalID e retorna o código do Produto.
+
+@param   cInternalID InternalID recebido na mensagem.
+@param   cRefer      Produto que enviou a mensagem
+@param   cVersao     Versão da mensagem única (Default 2.001)
+
+@author  Leandro Luiz da Cruz
+@version P11
+@since   08/02/2013
+@return  aResult Array contendo no primeiro parâmetro uma variável
+         lógica indicando se o registro foi encontrado no de/para.
+         No segundo parâmetro uma variável array com a empresa,
+         filial e o Código do Produto.
+
+@sample  IntUndInt('01|01|00001') irá retornar {.T., {'01', '01', '00001'}}
+/*/
+//-------------------------------------------------------------------
+Function IntProInt(cInternalID, cRefer, cVersao)
+   Local   aResult  := {}
+   Local   aTemp    := {}
+   Local   cTemp    := ''
+   Local   cAlias   := 'SB1'
+   Local   cField   := 'B1_COD'
+   Default cVersao  := '2.001'
+
+   If cVersao == '1.000' .Or. cVersao == '1.001'
+      cTemp := CFGA070Int(cRefer, cAlias, cField, cInternalID)
+   Else
+      cTemp := CFGA070Int(cRefer, cAlias, cField, cInternalID)
+   EndIf
+
+   If Empty(cTemp)
+      aAdd(aResult, .F.)
+      aAdd(aResult, STR0032 + " -> " + cInternalID) //"Produto não encontrado no de/para!"
+   Else
+      If cVersao == '1.000' .Or. cVersao == '1.001'
+         aAdd(aResult, .T.)
+         aAdd(aTemp, SubStr(cTemp, 3, TamSX3('B1_COD')[1]))
+         aAdd(aResult, aTemp)
+      ElseIf cVersao == '2.000' .Or. cVersao == '2.001'
+         aAdd(aResult, .T.)
+         aTemp := Separa(cTemp, '|')
+         aAdd(aResult, aTemp)
+      Else
+         aAdd(aResult, .F.)
+         aAdd(aResult, STR0030 + Chr(10) + STR0031) //"Versão do produto não suportada." "As versões suportadas são: 1.000, 1.001, 2.000, 2.001"
+      EndIf
+   EndIf
+Return aResult
+
+//-------------------------------------------------------------------
+/*/{Protheus.doc} MTICalPrd()
+Soma a quantidade de produtos iguais do mesmo lote ou endereço
+para considerar no calculo do saldo anterior
+@author Leonardo Quintania
+@since 11/12/2013
+@version 1.0
+@return NIL
+/*/
+//-------------------------------------------------------------------
+Static Function MTIGetCod(cCodigo)
+
+While At('|',cCodigo) > 0
+	cCodigo:= Substr(cCodigo,At('|',cCodigo)+1)
+EndDo
+
+Return cCodigo
+
+//-------------------------------------------------------------------
+/*/{Protheus.doc} XX4MENS()
+Retorna o nome da mensagem unica que esta sendo utilizada
+
+@param   cNameFunc Nome da função a ser pesquisada
+
+@author  Rodrigo Machado Pontes
+@version P12
+@since   24/11/2014
+@return  Nome da mensagem unica utilizada
+/*/
+//-------------------------------------------------------------------
+
+Static Function XX4MENS(cNameFunc)
+
+Local aAreaXX4	:= {}
+Local cRet			:= ""
+
+dbSelectArea('XX4')
+aAreaXX4 := XX4->(GetArea())
+XX4->(dbSetOrder(1))
+
+IF XX4->(dbSeek(Xfilial('XX4') + PADR(cNameFunc, Len(XX4_ROTINA))))
+	cRet := AllTrim(Upper(XX4_MODEL))
+Endif
+
+RestArea(aAreaXX4)
+
+Return cRet
+
+/*/{Protheus.doc} A010GRPPRD()
+Verifica qual a mensagem de grupo de produto esta cadastrada
+e retorna nome do adapter e versão
+
+@author Rodrigo Machado Pontes
+@since 01/10/2015
+@version 1.0
+@return NIL
+/*/
+
+Static Function A010GRPPRD()
+
+Local aAreaXX4	:= {}
+Local cMsg			:= ""
+Local cVersao		:= ""
+
+dbSelectArea('XX4')
+aAreaXX4 := XX4->(GetArea())
+XX4->(dbSetOrder(1))
+
+IF XX4->(dbSeek(Xfilial('XX4') + PADR('MATA035', Len(XX4_ROTINA))))
+	If AllTrim(Upper(XX4_MODEL)) == "FAMILY"
+		cMsg		:= AllTrim(Upper(XX4_MODEL))
+		cVersao	:= AllTrim(Upper(XX4_SNDVER))
+	ElseIf AllTrim(Upper(XX4_MODEL)) == "STOCKGROUP"
+		cMsg := AllTrim(Upper(XX4_MODEL))
+		cVersao	:= AllTrim(Upper(XX4_SNDVER))
+	EndIf
+Endif
+
+Return {cMsg,cVersao}

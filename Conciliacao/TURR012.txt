@@ -1,0 +1,309 @@
+#INCLUDE "RPTDEF.CH"
+#INCLUDE "FWPrintSetup.ch"
+#INCLUDE 'PROTHEUS.CH'
+#INCLUDE 'TURR012.CH'
+
+//------------------------------------------------------------------------------------------
+/*/{Protheus.doc} TURR012
+Função para impressão de Fatura
+@author    Cleyton
+@version   1.00
+@since     01/05/2016
+/*/
+//------------------------------------------------------------------------------------------
+Function TURR012(cCliPDF,cLojaPDF,cPrefixo,cFatura,cTipoImp,lViewPDF,lAuto,cDirPDF,lReimp)
+
+Local lTURR12BL  := ExistBlock("TURRELFT")
+
+Default cCliPDF   := ""
+Default cLojaPDF  := ""
+Default cPrefixo  := ""
+Default cFatura   := "" 
+Default lViewPDF  := .F.
+Default cDirPDF   := ""
+Default lAuto     := .F.
+Default cTipoImp  := "2"
+Default lReimp    := .T.	// .T. - fatura está sendo reimpressa via menu / .F. - fatura está sendo impressa pela geração de fatura
+
+If lTURR12BL
+	ExecBlock("TURRELFT",.f.,.f.,{cCliPDF,cLojaPDF,cPrefixo,cFatura,lViewPDF,@cDirPDF,lAuto,cTipoImp})
+Else
+	Processa({|| TURR12PRT(cCliPDF,cLojaPDF,cPrefixo,cFatura,lViewPDF,@cDirPDF,lAuto,cTipoImp,lReimp)}, STR0001, STR0002,.F.) // "Aguarde..." # "Gerando Arquivo"
+EndIf																							  
+
+Return()
+
+//------------------------------------------------------------------------------------------
+/*/{Protheus.doc} TURR12PRT
+Função para impressão de Fatura
+@author    Cleyton
+@version   1.00
+@since     01/05/2016
+/*/
+//------------------------------------------------------------------------------------------
+Function TURR12PRT(cCliPDF,cLojaPDF,cPrefixo,cFatura,lViewPDF,cDirPDF,lAuto,cTipoImp,lReimp)
+
+Local oPrint
+Local cPerg        := "TURR012"
+Local cPath        := TURxMkDir() 
+Local cAliasQry    := GetNextAlias()
+Local cArqPDF      := ""
+Local cArqREL      := ""
+Local cDirSave     := ""
+Local cFileNme     := ""
+Local cFilePrt     := ""
+Local cPathPDF     := ""
+Local cPathPrt     := ""
+Local cPrinter     := "PDF"
+Local cFilFat      := ""
+Local nQtdCopy     := 1
+Local nDevice      := IMP_PDF
+Local nPagina      := 0
+Local lDisabeSetup := .T.
+Local lAdjToLegacy := .T.
+Local nLin         := 0159
+Local lFirst       := .T.
+Local lTURR12IT    := ExistBlock("TURFATIT")
+Local cWhere       := ""
+Local lInServer    := Empty(SuperGetMV("MV_TURDIR",,""))
+Local cTempDir     := GetTempPath()
+Local cTpFat       := ""
+Local cCaminho     := ""
+
+Default cCliPDF    := ""
+Default cLojaPDF   := ""
+Default cPrefixo   := ""
+Default cFatura    := "" 
+Default lViewPDF   := .F. 
+Default cDirPDF    := ""
+Default lAuto      := .F.
+Default cTipoImp   := "2" //1=aglutinado;2=separado 
+
+If !lAuto 
+	If !Pergunte(cPerg,.T.)
+		Return()
+	EndIf
+	
+	cWhere += " G84_EMISS BETWEEN '"+ DTOS(MV_PAR09) +"' AND '"+ DTOS(MV_PAR10) +"' AND"
+	
+Else
+	Pergunte(cPerg,.F.)
+
+	mv_par01 := cCliPDF
+	mv_par03 := cCliPDF
+	
+	mv_par02 := cLojaPDF
+	mv_par04 := cLojaPDF
+
+	mv_par05 := cPrefixo
+	mv_par07 := cPrefixo
+	
+	mv_par06 := cFatura
+	mv_par08 := cFatura
+
+EndIf
+
+cWhere		:= '%'+ cWhere +'%'
+
+//Garante a existencia da fatura antes de iniciar a impressão/geração...
+BeginSql Alias cAliasQry
+	
+	SELECT	G84_FILIAL,
+			G84_PREFIX,
+			G84_NUMFAT,
+			G84_CLIENT,
+			G84_LOJA,
+			G84_TPFAT,
+			G84_TOTAL
+	FROM %Table:G84% G84
+	WHERE	G84_FILIAL =  %xFilial:G84%  AND
+			G84_CLIENT >= %Exp:MV_PAR01% AND
+			G84_LOJA   >= %Exp:MV_PAR02% AND
+			G84_CLIENT <= %Exp:MV_PAR03% AND
+			G84_LOJA   <= %Exp:MV_PAR04% AND
+			G84_PREFIX >= %Exp:MV_PAR05% AND
+			G84_PREFIX <= %Exp:MV_PAR07% AND
+			G84_NUMFAT >= %Exp:MV_PAR06% AND
+			G84_NUMFAT <= %Exp:MV_PAR08% AND
+			%Exp:cWhere%
+			G84.%NotDel%
+	
+EndSql
+
+If (cAliasQry)->(EOF()) .and. (cAliasQry)->(BOF())
+	If !lAuto
+		FwAlertError(STR0003,STR0004)//"Não há registros a serem processados" ##"Falha"
+	Else
+		FwAlertError(STR0007 + MV_PAR01 + " - " + MV_PAR02 + " " + MV_PAR03 + " - " + MV_PAR04 + " " + MV_PAR05 + " - " + MV_PAR06, STR0004)	// "Fatura não encontrada "		"Falha"
+	Endif
+	Return nil
+Endif
+(cAliasQry)->(dbGoTop())
+
+ProcRegua( (cAliasQry)->(RecCount()) )
+
+While (cAliasQry)->(!Eof())
+	
+	IncProc()
+
+	If (cAliasQry)->G84_TPFAT != "1" .Or. ((cAliasQry)->G84_TPFAT == "1" .And. (cAliasQry)->G84_TOTAL > 0) 
+		cFilFat  := (cAliasQry)->G84_FILIAL
+		cCliPDF  := (cAliasQry)->G84_CLIENT
+		cLojaPDF := (cAliasQry)->G84_LOJA
+		cPrefixo := (cAliasQry)->G84_PREFIX
+		cFatura  := (cAliasQry)->G84_NUMFAT
+	
+		If Empty(cDirPDF)
+			If lInServer
+				cCaminho := SubStr(cTempDir,1,RAT("\",cTempDir)-1)+cPath
+			Else
+				cCaminho := cPath
+			Endif
+			cDirSave := cCaminho
+			
+			If cTipoImp == "2" //Separado por cliente+fatura
+				cDirSave := cDirSave + "\" + TRXSTRTRAN(cCliPDF) + TRXSTRTRAN(cLojaPDF)
+								
+				cDirSave := cDirSave + "\" + TRXSTRTRAN(cPrefixo)+ TRXSTRTRAN(cFatura)
+		
+				cDirSave := cDirSave+"\FAT"		
+				FwMakeDir(cDirSave)
+			EndIf
+	
+			cDirSave := cDirSave+"\"
+			If lAuto
+				cDirPDF := cDirSave
+			Endif
+		Else
+			cDirSave := cDirPDF
+		EndIf
+	
+		If cTipoImp == "1" //Aglutinado
+			
+			If Empty(cArqPDF)
+				cArqPDF := DtoS(dDataBase) + StrTran(Time(),":","") + ".PD_"  //data e hora da geração do arquivo		
+			EndIf
+			
+		ElseIf cTipoImp == "2" //Separado por cliente+fatura
+		
+			cArqPDF := Alltrim(cCliPDF) + Alltrim(cLojaPDF)			//cód. cliente
+			cArqPDF += "_" + alltrim(cPrefixo) + Alltrim(cFatura)	//nro da fatura 
+			cArqPDF += "_" + DtoS(dDataBase) + StrTran(Time(),":","") + ".PD_"  //data e hora da geração do arquivo	
+			
+		EndIf
+	
+		If lFirst 
+	
+			lFirst := .F.
+			oPrint:= FWMsPrinter():New(cArqPDF,IMP_PDF,lAdjToLegacy,cDirSave,lDisabeSetup,,,,,,.F.,lViewPDF,nQtdCopy)
+			oPrint:SetResolution(72)
+			oPrint:SetPortrait() 
+			oPrint:SetPaperSize(DMPAPER_A4)
+	
+			lCancel := oPrint:NMODALRESULT == 2
+	
+			If lCancel
+				(cAliasQry)->(dbCloseArea())
+				FreeObj(oPrint)
+				Return()
+			EndIf
+	
+		EndIf
+		
+		nPagina++
+		
+		If lTURR12IT
+			oPrint := ExecBlock("TURFATIT",.f.,.f.,{oPrint,cCliPDF,cLojaPDF,cPrefixo,cFatura,nPagina})
+		Else
+			TURR013(@oPrint,@nLin,cCliPDF,cLojaPDF,cPrefixo,cFatura,nPagina,lReimp,cFilFat)
+		EndIf
+	
+		cFilePrt := cDirSave+cArqPDF
+		
+		If cTipoImp == "2" //Separado por cliente+fatura
+	
+			FERASE(StrTran(Upper(cFilePrt),".PD_",".PDF"))
+			File2Printer( cFilePrt, "PDF" )
+			oPrint:CPATHPDF  := cDirSave
+			oPrint:Preview()
+			If lInServer
+				cOldPath := Substr(cDirSave,Len(cTempDir))
+				FwMakeDir(cOldPath)
+				CpyT2S( cDirSave+'\'+StrTran(Upper(cArqPDF),".PD_",".PDF"), cOldPath)
+			Endif
+			nLin      := 0159
+			lFirst := .T.
+			nPagina := 0
+		EndIf
+		
+		If lAuto .AND. TR012ChkImp((cAliasQry)->G84_TPFAT)///MV_PAR18 == 2 //Sim
+			ShellExecute( "Print", StrTran(Upper(cArqPDF),".PD_",".PDF"), " ", cDirSave, 0 ) 
+		EndIf
+		
+		cTpFat := (cAliasQry)->G84_TPFAT
+	EndIf	
+	(cAliasQry)->(dbSkip())
+EndDo
+
+(cAliasQry)->(dbCloseArea())
+
+If ValType(oPrint) == "O"
+	
+	If cTipoImp == "1"
+	
+		FERASE(StrTran(Upper(cFilePrt),".PD_",".PDF"))
+		File2Printer( cFilePrt, "PDF" )
+	
+		oPrint:CPATHPDF  := cDirSave
+		oPrint:Preview()
+		
+		If lAuto .AND. TR012ChkImp(cTpFat) //mv_par18 == 2 (sim)
+			ShellExecute( "Print", StrTran(Upper(cArqPDF),".PD_",".PDF"), " ", cDirSave, 0 ) 
+		EndIf
+			
+	EndIf
+	
+	If lInServer
+	
+		cOldPath := Substr(cDirSave,Len(cTempDir))
+	
+		FwMakeDir(cOldPath)
+		CpyT2S( cDirSave+'\'+StrTran(Upper(cArqPDF),".PD_",".PDF"), cOldPath)
+	
+	Endif
+		
+	FreeObj(oPrint)
+
+EndIf
+
+If !lAuto
+	FwAlertSuccess(STR0005,STR0006)//"Impressão realizada com sucesso"##"Sucesso"
+Endif
+
+Return()
+
+//------------------------------------------------------------------------------------------
+/*/{Protheus.doc} TR012ChkImp
+Função para checar se deverá imprimir diretamente na porta da impressora
+@author    Fernando Radu Muscalu
+@version   1.00
+@since     09/11/2016
+/*/
+//------------------------------------------------------------------------------------------
+
+Static Function TR012ChkImp(cTipoFat)
+
+Local lAuto	:= .f.
+
+Do Case
+Case ( cTipoFat == "1" .And. FWIsInCallStack("TURA044V") )	//Faturamento de venda
+	lAuto := mv_par18 == 2
+Case ( cTipoFat == "2" .And. FWIsInCallStack("TURA044A") )	//Faturamento de apuração
+	lAuto := .f. //em implementação (mv_par14 == 2)
+Case ( cTipoFat == "3" .And. FWIsInCallStack("TURA044B") )	//Faturamento de breakage
+	lAuto := .f. //em implementação (mv_par14 == 2)
+Case ( cTipoFat == "4" .And. FWIsInCallStack("TURA044C") )	//Faturamento de credito
+	lAuto := .f. //em implementação (mv_par16 == 2)
+End Case
+
+Return(lAuto)

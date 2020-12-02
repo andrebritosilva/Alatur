@@ -1,0 +1,1014 @@
+#INCLUDE "MATA030.CH" 
+#INCLUDE "PROTHEUS.CH" 
+#INCLUDE "FWEVENTVIEWCONSTS.CH"                            
+#INCLUDE "FWADAPTEREAI.CH"
+#INCLUDE "FWMVCDEF.CH"     
+#INCLUDE "XMLXFUN.CH"
+#INCLUDE "TBICONN.CH"
+#INCLUDE "CRMDEF.CH"
+
+STATIC lHistFiscal := HistFiscal()
+
+//------------------------------------------------------------------------------
+/*/{Protheus.doc} Ma030Tudok
+
+Verifica se os campos estao OK  
+@author Aline Correa do Vale
+@since 19/02/1997
+@version 1.0
+@return 
+@obs Função tambem utiizada na consulta padrão do cliente/*/
+//------------------------------------------------------------------------------
+Function Ma030TudOk(nOpc)
+
+Local bCampoSA1  := { |x| SA1->(Field(x)) }
+Local lRet       := .T.
+Local lHistTab   := GetNewPar("MV_HISTTAB", .F.)
+Local lTpPessoa  := M->A1_PESSOA
+Local nX         := 0
+Local lUsaFilTrf := UsaFilTrf()
+Local aAreaSA1   := {}
+Local aTabAOW    := {}
+
+// ====================================================================
+// VERIFICA INTEGRACAO COM SIGATAF 
+Local lIntTAF  := FindFunction("TAFExstInt") .AND. TAFExstInt()
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Quando o tipo de cliente for I, M, X ou E o campo do numero de inscricao torna-se obrigatorio ³
+//³ Localizacao Argentina 																		  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If cPaisLoc == "ARG" .AND. M->A1_TIPO $ "IMXE" .AND. Empty(M->A1_CGC)
+	Aviso(STR0023,STR0025,{STR0024})  //"Atencao"###"O tipo de cliente selecionado exige o preenchimento do campo CUIT/CUIL"###"Ok"
+	lRet:=.F.
+EndIf 
+
+If cPaisLoc == "BRA" .AND. M->A1_EST<>"EX"
+	lRet := IE(M->A1_INSCR,M->A1_EST)
+EndIf             
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Se o Tipo de documento (AFIP) for 80 ou 86 devera ser obrigatorio o campo A1_CGC (C.U.I.T.)   ³
+//³ qualquer outro valor selecionado devera ser obrigatorio o campo A1_RG. Localizacao Argentina  ³
+//³ Conforme tabela "OC" do configurador.                                                         ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If cPaisLoc == "ARG" .AND. AllTrim(M->A1_AFIP) $ "1/7" .AND. Empty(M->A1_CGC)
+	Aviso(STR0023,STR0041,{STR0024})  //"Atencao"###"O tipo de documento (AFIP) selecionado exige o preenchimento do campo CUIT/CUIL"###"Ok"
+	lRet:=.F.
+ElseIf cPaisLoc == "ARG" .AND. !(AllTrim(M->A1_AFIP) $ "1/7") .AND. Empty(M->A1_RG) .AND. !Empty(M->A1_AFIP)
+	Aviso(STR0023,STR0042,{STR0024})  //"Atencao"###"O tipo de documento (AFIP) selecionado exige o preenchimento do campo ID"###"Ok"
+	lRet:=.F.
+EndIf 
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Pontos de Entrada 		  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If lRet .AND. ExistTemplate("MA030TOK")
+	lRet := ExecTemplate("MA030TOK")
+EndIf
+
+If lRet .AND. nModulo == 72
+	lRet := KEXF830()
+EndIf
+
+If lRet .AND. ExistBlock("MA030TOK")
+	lRet := ExecBlock("MA030TOK")
+EndIf
+
+If lRet .AND. cPaisLoc == "GUA"
+   lRet  := A030ValDoc()
+EndIf
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Carregar o vetor aCpoAltSA1 com os campos que sofreram  ³
+//³alguma alteracao. Somente serao gravados na tabela AIF  ³
+//³apos a validacao completa da rotina AxAltera() executada³
+//³pela funcao A030Altera().                               ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If Altera .And. lRet .And. ((lHistTab) .Or. lHistFiscal)
+	
+	aCpoAltSA1 := {}
+	For nX := 1 to FCount()
+		If !(AllTrim(M->&( eVal( bCampoSA1, nX) )) == AllTrim(SA1->&( eVal( bCampoSA1, nX))))
+			aAdd( aCpoAltSA1, { eVal( bCampoSA1, nX), SA1->&( eVal( bCampoSA1, nX) ) } )			
+		EndIf				
+	Next nX 	
+	
+	If Len(aCpoAltSA1)>0 .And. lHistFiscal
+		M->A1_IDHIST := IdHistFis()
+	EndIf
+EndIf
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Integracao com o Modulo de Transporte (TMS)                           ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If lRet .And. IntTms() .And. nModulo == 43
+	If Empty(M->A1_CDRDES)
+		Help("",1,"CDRDES") //--"Informe um código de região válida para este cliente."
+		lRet := .F.
+	Endif
+Endif
+
+//MV_RMCLASS: Parametro de ativacao da integracao do Protheus x RM Classis Net (RM Sistemas)
+If lRet .and. GetNewPar("MV_RMCLASS",.F.) .and. nOpc == 3 .and. M->A1_COD == Replicate("0",TamSX3("A1_COD")[1])
+	//Busca o Proximo codigo do cliente que esta sendo incluido
+	M->A1_COD := M030PrRMCli() 
+EndIf
+
+If cPaisLoc=="BRA" .And. lRet .And. !Empty(M->A1_CGC) .And. (Type("lCGCValido")<>"U" .And. !lCGCValido);
+	.And. M->A1_EST<>"EX" .And. M->A1_TIPO <> "X"
+	If Empty(lTpPessoa)
+		lTpPessoa := IIf(Len(AllTrim(M->A1_CGC))==11, "F", "J")
+	EndIf
+	lRet := A030CGC(lTpPessoa, M->A1_CGC)
+EndIf
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Validacao do campo A1_FILTRF.(UPDEST39)                       ³
+//³Verificar se a filial informada neste campo existe realmente. ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If lRet .And. lUsaFilTrf
+	If !Empty(M->A1_FILTRF)
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Valida se a filial informada existe realmente                  |
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		lRet := MtValidFil(cEmpAnt+M->A1_FILTRF)
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Verificar se nao existe outro cliente com a mesma filial associada |
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If lRet
+			aAreaSA1 := SA1->(GetArea())
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Monta filtro e indice temporario na SA1 ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			cArqIdx := CriaTrab(,.F.)
+			IndRegua("SA1", cArqIdx, "A1_FILIAL+A1_FILTRF") //"Selecionando Registros ..."
+			nIndex := RetIndex('SA1')
+			#IFNDEF TOP
+				dbSetIndex(cArqIdx+OrdBagExt())
+			#ENDIF
+			dbSetOrder(nIndex+1) // A1_FILIAL+A1_FILTRF
+			If dbSeek(xFilial('SA1')+M->A1_FILTRF) .And. (SA1->A1_COD <> M->A1_COD)
+				Help("",1,"SAVALCLI",, STR0059+': '+SA1->A1_COD+' - '+STR0060+': '+SA1->A1_LOJA, 4, 11 )
+				lRet := .F.
+			EndIf			
+			RetIndex("SA1")
+			Ferase( cArqIdx + OrdBagExt() )
+			RestArea(aAreaSA1)
+		EndIf
+	EndIf
+EndIf  
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Validacao do campo A1_ENTORI.                      						  ³
+//³Verificar se o campos A1_ORIGCT == 1, campo A1_ENTORIse torna obrigatorio.³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ  
+
+If lRet .And. (M->A1_ORIGCT $ "1|5|7" ) .And. Empty(M->A1_ENTORI)    
+	Help(,,STR0023,,STR0078,1,0) //"O campo Ent. Origem tem que ser preenchido"
+	lRet := .F. 
+EndIf
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Verifica se o usuario trocou o segmento primario de uma amarracao com os subsegmentos. ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If 	lRet 
+	lRet := CRMA620TOkSeg(M->A1_CODSEG,A030GAOWMark())
+Endif	
+
+
+//-- Integra?o Protheus x GFE (INCLUSAO,ALTERACAO)
+If lRet .And. !MATA030IPG(nOpc)
+	lRet := .F.
+EndIf
+
+// ==============================================
+// Demetrio - 11/2014 - Integração TAF 
+// ==============================================
+If lRet .AND. lIntTAF
+	MsgRun( "Relizando integração do produto com SIGATAF","Aguarde..." , {|| TAFIntOnLn("T003CLI",nOpc,cFilAnt) } ) // "Aguarde" "Anotando registros para integração"
+EndIf 
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Faz a avaliação do(s) melhor(es) territorio(s) para atender esta conta . ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If ( lRet .And. nModulo == 73 .And. nOpc <> 5 )
+	lRet := CRMA690EvalTerritory("MATA030","SA1",.T.,.F.)
+EndIf
+
+Return(lRet)
+
+//------------------------------------------------------------------------------
+/*/	{Protheus.doc} A030CGC
+
+Validacao do campo A1_CGC. Qd Pessoa="J" nao permitir entrada de CPF.  
+
+@sample	A030CGC(cTipPes,cCNPJ)
+
+@param		ExpC1 = Tipo: Fisico ou Jurídico 
+			ExpC2 = Numero do CGC
+			
+@return	lRetorno
+
+@author	Sabrina Passini    
+@since		01/06/2005
+@version	12
+/*/
+//------------------------------------------------------------------------------
+Function A030CGC(cTipPes,cCNPJ)
+
+Local aArea       := GetArea()
+Local aAreaSA1    := SA1->(GetArea())
+Local lRetorno    := .T.
+Local cCNPJBase   := ""
+Local cMv_ValCNPJ := GetNewPar("MV_VALCNPJ","1")
+Local cMv_ValCPF  := GetNewPar("MV_VALCPF","1")
+Local lAchou      := .F.
+Local lEleMesmo   := .F.
+
+DEFAULT cCNPJ     := &(ReadVar())                                          
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Valida o tipo de pessoa                                      ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If cTipPes == "F" .AND. !(Len(AllTrim(cCNPJ))==11)
+	Help(" ",1,"CPFINVALID")
+	lRetorno := .F.
+ElseIf cTipPes == "J" .AND. !(Len(AllTrim(cCNPJ))==14)  
+	Help(" ",1,"CGC")     
+	lRetorno := .F.
+EndIf     
+
+If Type("lCGCValido") == "U" // Protecao caso esta funcao seja invocada por outra rotina diferente da Inclusao/Alteracao
+	Private lCGCValido := .F.
+EndIf
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Valida a duplicidade do CGC                                  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If lRetorno .AND. Pcount() > 1 
+	If cTipPes == "J" .Or. Empty(cTipPes)
+		DbSelectArea("SA1")
+		DbSetOrder(3)
+		lAchou := DbSeek(xFilial("SA1")+cCNPJ)
+		If lAchou
+			lEleMesmo := M->A1_COD+M->A1_LOJA == SA1->A1_COD+SA1->A1_LOJA
+		EndIf
+		If lAchou .AND. !lEleMesmo
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³O parametro MV_VALCNPJ verifica se a validacao do CNPJ deve ser feita:                            ³
+			//³1 = informando ao usuario que ja existe o CNPJ na base e verificando se deseja incluir mesmo assim³
+			//³2 = nao permitindo que o usuario insira o mesmo CNPJ                                              ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			If cMv_ValCNPJ == "1" 
+				If !_SetAutoMode()
+					If Aviso(STR0023,STR0028 + " " + AllTrim(SA1->A1_COD) + "/" + AllTrim(SA1->A1_LOJA) + " - " + AllTrim(SA1->A1_NOME) + ".",{STR0030,STR0031},2)<>1//"Atenção"###"O CNPJ informado já foi utilizado no cliente "###"Aceitar"###"Cancelar"
+						lRetorno   := .F.
+						lCGCValido := .F.
+					Else
+						lCGCValido := .T. // Indica que ja validou o CNPJ e nao devera validar novamente na confirmacao da inclusao
+					EndIf
+				EndIf
+			Else
+				Aviso(STR0023,STR0028 + " " + AllTrim(SA1->A1_COD) + "/" + AllTrim(SA1->A1_LOJA) + " - " + AllTrim(SA1->A1_NOME) + ".",{"Ok"})//"Atenção"###"O CNPJ informado já foi utilizado no cliente "
+				lRetorno := .F.
+			Endif
+		ElseIf lRetorno			
+			cCNPJBase := SubStr(cCNPJ,1,8)
+			DbSelectArea("SA1")
+			DbSetOrder(3)
+		  	If DbSeek(xFilial("SA1")+cCNPJBase) .And. M->A1_COD <> SA1->A1_COD .And. SA1->A1_PESSOA == "J"
+				If !_SetAutoMode()
+					If Aviso(STR0023,STR0044 + " " + AllTrim(SA1->A1_COD) + "/" + AllTrim(SA1->A1_LOJA) + " - " + AllTrim(SA1->A1_NOME) + ".",{STR0030,STR0031},2)<>1//"Atenção"###"O CNPJ informado já foi utilizado no cliente "###"Aceitar"###"Cancelar"
+						lRetorno   := .F.
+						lCGCValido := .F.
+					Else
+						lCGCValido := .T. // Indica que ja validou o CNPJ e nao devera validar novamente na confirmacao da inclusao
+					EndIf
+				EndIf
+			EndIf
+		EndIf
+	Else
+		DbSelectArea("SA1")
+		DbSetOrder(3)
+		If DbSeek(xFilial("SA1")+cCNPJ) .And. M->A1_COD+M->A1_LOJA <> SA1->A1_COD+SA1->A1_LOJA
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³O parametro MV_VALCPF verifica se a validacao do CPF deve ser feita:                              ³
+			//³1 = informando ao usuario que ja existe o CPF na base e verificando se deseja incluir mesmo assim ³
+			//³2 = nao permitindo que o usuario insira o mesmo CPF                                               ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			If cMv_ValCPF == "1"
+				If !_SetAutoMode()
+					If Aviso(STR0023,STR0029 + " " + AllTrim(SA1->A1_COD) + "/" + AllTrim(SA1->A1_LOJA) + " - " + AllTrim(SA1->A1_NOME) + ".",{STR0030,STR0031},2)<>1//"Atenção"###"O CPF informado já foi utilizado cliente "###"Aceitar"###"Cancelar"
+						lRetorno   := .F.
+						lCGCValido := .F.
+					Else
+						lCGCValido := .T. // Indica que ja validou o CNPJ e nao devera validar novamente na confirmacao da inclusao
+					EndIf
+				EndIf
+			Else 
+				Aviso(STR0023,STR0029 + " " + AllTrim(SA1->A1_COD) + "/" + AllTrim(SA1->A1_LOJA) + " - " + AllTrim(SA1->A1_NOME) + ".",{"Ok"})//"Atenção"###"O CPF informado já foi utilizado no cliente "
+				lRetorno := .F.
+			Endif
+		EndIf		
+	EndIf	
+EndIf
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Valida a existencia do CNPJ/CPF nos cadastros de suspect³
+//³e prospect                                              ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If	lRetorno .AND. (nModulo == 5 .or. nModulo == 13) .And. !lEleMesmo
+	If (cTipPes == "F" .And. cMv_ValCPF <> "1") .Or. ((cTipPes == "J" .Or. Empty(cTipPes)) .And. cMv_ValCNPJ <> "1")
+		If !Empty(cCNPJ)
+			lRetorno := TmkVeEnt(cCNPJ,"SA1")
+		EndIf
+	EndIf
+EndIf
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Avalia o site da Receita Federal - Mashups                   ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ  
+If lRetorno .AND. GetNewPar("MV_MASHUPS",.F.) .AND. !_SetAutoMode()
+	RFMashups(M->A1_CGC,{"M->A1_NOME","M->A1_NREDUZ","M->A1_END","M->A1_CEP","M->A1_BAIRRO","M->A1_MUN","M->A1_EST"})
+EndIf
+
+RestArea(aAreaSA1)
+RestArea(aArea)
+
+Return lRetorno  
+
+//Cola
+//------------------------------------------------------------------------------
+/*/	{Protheus.doc} MT030Ok
+
+Validacao da Getdados  
+
+@sample	MT030Ok(aGetDad,nAtu)
+
+@param		ExpA1 = GetDados 
+			ExpN1 = Numero atual da linha 
+
+@return	lRetorno
+
+@author	Marco Bianchi      
+@since		22/11/2007
+@version	12
+/*/
+//------------------------------------------------------------------------------
+Function MT030Ok(aGetDad,nAtu)
+
+Local lRetorno := .F.
+Local aSavHead := aClone(aHeader)
+Local aSavCols := aClone(aCols)
+Local nSavN    := N
+        
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Valida todas as getdados                                     ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ aCols e aHeader 1 e 2 nao coincidem com folder 1 e 2 devido  ³
+//³ a um erro na classe folder ( nao alterar )                   ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If ( nAtu == 2 )
+	aHeader := aClone(aSavHead)
+	aCols   := aClone(aSavCols)
+	N       := nSavN
+Else
+	aHeader := aClone(aHeader1)
+	aCols   := aClone(aCols1)
+	N       := Max(aGetDad[1]:oBrowse:nAT,1)
+EndIf 	
+If ( aGetDad[1]:TudoOk() )
+	If ( nAtu == 1 )
+		aHeader := aClone(aSavHead)
+		aCols   := aClone(aSavCols)
+		N       := nSavN
+	Else
+		aHeader := aClone(aHeader2)
+		aCols   := aClone(aCols2)
+		N       := Max(aGetDad[2]:oBrowse:nAT,1)
+	EndIf
+	If ( aGetDad[2]:TudoOk() )
+
+		If ( nAtu == 3 )
+			aHeader := aClone(aSavHead)
+			aCols   := aClone(aSavCols)
+			N       := nSavN
+		Else
+			aHeader := aClone(aHeader3)
+			aCols   := aClone(aCols3)
+			N       := Max(aGetDad[3]:oBrowse:nAT,1)
+		EndIf
+		If ( aGetDad[3]:TudoOk() )
+			lRetorno := .T.			
+		Endif 				
+	EndIf
+EndIf
+
+aHeader := aClone(aSavHead)
+aCols   := aClone(aSavCols)
+N       := nSavN
+    
+Return(lRetorno)
+
+//Cola
+//------------------------------------------------------------------------------
+/*/	{Protheus.doc} Ma030Off
+
+Verifica se o ambiente estpa off-line.
+Função chamada através do campo A1_COD
+
+
+@sample	Ma030Off()
+
+@return	lRetorno
+
+@author	Nunzio Autorino Junior    
+@since		31/03/2008
+@version	12
+/*/
+//------------------------------------------------------------------------------
+Function Ma030Off()
+
+Local lRetorno 		:= .T.					//Retorno da funcao
+
+lRetorno 	:= SuperGetMv("MV_LJOFFLN", Nil, .F.)
+
+Return !lRetorno
+
+//-------------------------------------------------------------------------------
+/*{Protheus.doc} NoZeroVldCGC 
+Esta funcao foi criada para impedir que o CPF/CNPJ usado para gerar o código do 
+cliente comece com zero, evitando assim que a string cCGCCPF ao ser convertida 
+para numerica fique com menos digitos do que deveria, o que diminui a possibilidade 
+da funcao M030CGCCPF() gerar codigos duplicados.
+
+@param   cCGCCPF		CPF/CNPJ do cliente
+
+@author  Vendas & CRM
+@version P11
+@since   25/10/2012
+@obs     
+@return cReturn 	- CPF/CNPJ invalido para geracao do codigo do cliente. 
+O CPF/CNPJ é invalido para nao haver a possibilidade de duplicidade 
+com um CPF/CNPJ existente.
+*/
+//--------------------------------------------------------------------------------
+Function NoZeroVldCGC(cCGCCPF,lCgcCpf)
+
+Local cIniDgtCGC 	:= SubStr(cCGCCPF,1,1) 	// Primeiro digito do CPF/CNPJ
+Local cCGCRestant	:= SubStr(cCGCCPF,2)		// Digitos restantes do CPF/CNPJ
+Local cReturn		:= cCGCCPF					// Retorno da funcao
+Local lFound		:= .F.						// 
+Local cCgcCpfDig	:= cCGCCPF					// Guarda o CPF/CNPJ digitado	
+
+DEFAULT lCgcCpf		:= .T.
+
+While !lFound             
+
+	If lCgcCpf
+		cIniDgtCGC 	:= Soma1(cIniDgtCGC)
+		cCGCCPF 	:= cIniDgtCGC+cCGCRestant
+	Else
+		lCgcCpf := .T.
+	EndIf
+		
+	If Len(AllTrim(cCGCCPF)) > 11
+	
+		//Pessoa Juridica
+		If !CGC(cCGCCPF,,.F.)
+			//O CPF/CNPJ deve ser invalido para nao haver a possibilidade de duplicidade com um CPF/CNPJ existente.
+			lFound := .T.
+			cReturn := cCGCCPF
+		EndIf
+	Else
+		//Pessoa Fisica
+		If !CGC(cCGCCPF,,.F.)
+			//O CPF/CNPJ deve ser invalido para nao haver a possibilidade de duplicidade com um CPF/CNPJ existente.
+			lFound := .T.
+			cReturn := cCGCCPF
+		EndIf
+	EndIf
+End                          
+
+// Retorna o CPF/CGC digitado
+M->A1_CGC := cCgcCpfDig
+
+Return cReturn
+
+//------------------------------------------------------------------------------
+/*/	{Protheus.doc} M030ValCli
+
+Valida se o cliente já está cadastrado quando o ambiente estiver off-line.
+
+@sample	M030ValCli()
+
+@return	lRetorno
+
+@author	Nunzio Autorino Junior    
+@since		01/04/2008
+@version	12
+/*/
+//------------------------------------------------------------------------------
+Function M030ValCli()
+	
+Local aArea	   		:= GetArea()           					//Area atual
+Local aAreaSA1 		:= SA1->(GetArea())    				//Area do SA1
+Local lRetorno 		:= .T.									//Retorno da funcao
+Local lAmb			:= SuperGetMv("MV_LJOFFLN", Nil, .F.)  //Se o ambiente esta em off-line
+
+If lAmb .AND. INCLUI
+	//Seleciona o arquivo
+	DbSelectArea("SA1")
+	//Ordena pelo indice 1
+	DbSetOrder(1)
+	//Posiciona no registro
+	If DbSeek(xFilial("SA1") + M->A1_COD + M->A1_LOJA)
+		Alert(STR0045) //"Cliente já cadastrado (Ambiente Off-Line)"
+		lRetorno := .F.
+	EndIf
+EndIf
+
+//------------------------------------------------------------------------------
+/*/	{Protheus.doc} ValBTOk
+
+Função para incluir PE para validar botão OK 
+
+@sample	ValBTOk(nOpc)
+
+@param		ExpN1 = Opção  
+			
+@return	lRetorno
+
+@author	Vendas CRM    
+@since		26/04/2010
+@version	12
+/*/
+//------------------------------------------------------------------------------
+Function ValBTOk(nOpc)
+
+Local lOk := .T.
+
+If nOpc == 5 // Valida Botão OK na exclusão.
+	If ExistBlock("VBTOK030")
+		lOkBlk := ExecBlock("VBTOK030",.F.,.F., {nOpc} )
+		lOk := IIf(ValType(lOkBlk) <> "L",lOk,lOkBlk)
+	EndIf
+		
+	//-- Integra?o Protheus x GFE (INCLUSAO,ALTERACAO)
+	If !MATA030IPG(5)
+		lOk := .F.
+	EndIf
+	
+EndIf
+
+Return lOk
+
+//Restaura a area atual e do arquivo SA1
+RestArea(aAreaSA1)
+RestArea(aArea)
+
+
+Return lRetorno
+
+//------------------------------------------------------------------------------
+/*/	{Protheus.doc} MA30VerOp
+
+Verifica se existe vinculo do cliente que esta sendo excluido no cadastro 
+de oportunidades.    
+
+@sample	MA30VerOp()
+
+@return	Nil
+
+@author	Marco Aurelio - Mano     
+@since		26/09/2007
+@version	12
+/*/
+//------------------------------------------------------------------------------           
+Function MA30VerOp()
+
+Local cAliasTRB := GetNextAlias()	// Nome do arquivo temporario
+Local cQuery    := ""				// Auxiliar para execucao de query
+Local aArea     := GetArea()		// Salva area atual para posterior restauracao
+Local lRet      := .F.				// Conteudo de retorno
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Query para pesquisar o cliente na tabela de Oportunidaes(AD1) ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+cQuery := "SELECT * "
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Tabela base do filtro ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+cQuery += "FROM "  
+cQuery += RetSqlName("AD1")+" AD1 "	
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Condicoes de filtro ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+cQuery += "WHERE "
+cQuery += "AD1_FILIAL = '"+ xFilial("AD1")+"' AND "
+cQuery += "AD1_CODCLI = '"+ SA1->A1_COD   +"' AND "
+cQuery += "AD1_LOJCLI = '"+ SA1->A1_LOJA  +"' AND "
+cQuery += "AD1.D_E_L_E_T_  <> '*'"
+
+cQuery := ChangeQuery(cQuery)
+
+DbUseArea(.T.,'TOPCONN',TCGENQRY(,,cQuery),cAliasTRB,.T.,.T.)
+
+If !(cAliasTRB)->(Eof())
+
+	Help(" ",1,"OPORNODEL") // Exclusao nao permitida deste cliente pois existe vinculo do mesmo no cadastro de oportunidades. 
+	lRet := .T.
+	
+EndIf
+
+(cAliasTRB)->(DbCloseArea())
+
+RestArea(aArea)
+
+Return(lRet)
+
+//------------------------------------------------------------------------------
+/*/	{Protheus.doc} A030VldEnt
+
+Valida o campo A1_ORIGCT e retorna  se o mesmo pode ser editado. 
+
+@sample	A030VldEnt()
+
+@return	lRet
+
+@author	Vendas CRM    
+@since		22/05/13
+@version	12
+/*/
+//------------------------------------------------------------------------------
+Function A030VldEnt()
+
+Local lRet := .F.
+
+If M->A1_ORIGCT $ "1|5|7" 
+	 lRet := .T.
+EndIf
+
+Return (lRet)
+
+//------------------------------------------------------------------------------
+/*/	{Protheus.doc} A030VldCd
+
+Valida se o código digitado pelo usuário existe na tabela.
+
+@sample	A030VldCd()
+
+@return	lRet
+
+@author	Vendas CRM    
+@since		22/05/2013
+@version	12
+/*/
+//------------------------------------------------------------------------------                
+Function A030VldCd()  
+ 
+Local lRet	:=	.F. 
+
+// 1=Mailing;2=Campanha;3=Web;4=Indicacao;5=Evento;6=Anuncio;7=Parceiro;8=Relacoes publicas;9=Seminario;A=Boca-a-boca;B=Outros
+Do Case
+	Case M->A1_ORIGCT == "1" .AND. !Empty(M->A1_ENTORI)	//1=Mailing
+		lRet := ExistCpo("SA2", M->A1_ENTORI)
+	Case M->A1_ORIGCT == "5"	.AND. !Empty(M->A1_ENTORI)	//5=Evento
+		lRet := ExistCpo("ACD", M->A1_ENTORI)
+	Case M->A1_ORIGCT == "7" .AND. !Empty(M->A1_ENTORI)	//7=Parceiro 
+		lRet := ExistCpo("AC4", M->A1_ENTORI)
+	Case Empty(M->A1_ENTORI)
+		lRet := .T.
+EndCase
+
+Return(lRet)  
+
+//-----------------------------------------------------
+/*/	Valid após a confirmação de inclusão/alteração/exclusão
+@author Felipe Machado de Oliveira
+@param nOperation = 3 - Incluir
+                    4 - Alterar
+                    5 - Excluir
+@version P11
+@since 18/04/2013
+/*/
+//------------------------------------------------------
+Function MATA030IPG(nOperation)
+Local lRet 		:= .T.
+Local lRetIPG 	:= .T.
+Local lIntGFE 	:= SuperGetMv("MV_INTGFE",.F.,.F.)
+Local cIntGFE2 	:= SuperGetMv("MV_INTGFE2",.F.,"2")
+
+Static _lMT030IPG := Existblock( 'MATA030IPG' )
+
+Default nOperation := "3"
+
+//Integração Protheus com SIGAGFE
+If lIntGFE == .T. .And. cIntGFE2 $ "1"
+
+	If _lMT030IPG
+		lRetIPG := ExecBlock( 'MATA030IPG' , .F. , .F. , {nOperation} )
+	Endif
+	
+	If lRetIPG
+		If !InterGU3C(nOperation)
+			lRet := .F.
+		EndIf
+	EndIf
+		
+EndIf
+
+
+Return lRet
+
+//------------------------------------------------------------------------------
+/*/{Protheus.doc} GetChild
+
+Retorna os filhos relacionados ao registro.	
+
+@sample		GetChild(cFilialCli,cCli,cLoja)
+
+@param			ExpC1 - Filial do cliente
+				ExpC2 - Código do cliente
+				ExpC3 - Código da loja do cliente
+
+@return		ExpA1 - Array contendo os filho do registro
+
+@author		Cristiane Nishizaka
+@since			05/02/2014
+@version		12.0
+/*/
+//------------------------------------------------------------------------------
+Function GetChild(cFilialCli,cCli,cLoja)
+
+Local aArea		:= GetArea()  
+Local aAreaSA1	:= SA1->(GetArea())  
+Local aFilhos		:= {}
+
+DbSelectArea("SA1")
+SA1->(DbGoTop())
+
+//Guarda no array todos os filhos do registro
+While !SA1->(EOF())
+	If cFilialCli == xFilial("SA1") .And. cCli+cLoja == SA1->A1_CLIPRI+SA1->A1_LOJPRI
+		Aadd(aFilhos, SA1->A1_COD+SA1->A1_LOJA)
+	EndIf	
+	DbSkip()
+End 
+
+RestArea(aAreaSA1)
+RestArea(aArea)
+
+Return aFilhos
+
+//------------------------------------------------------------------------------
+/*/{Protheus.doc} PermExcPai
+
+Valida Exclusão, verificando se o cliente está contindo na Estrutura de SubClientes.	
+
+@sample		PermExcPai(cFilialCli,cCli,cLoja)
+
+@param			ExpC1 - Filial do cliente
+				ExpC2 - Código do cliente
+				ExpC3 - Código da loja do cliente
+
+@return		ExpA1 - 	.T. permite exclusão
+							.F. não permite exclusão
+
+@author		Cristiane Nishizaka
+@since			05/02/2014
+@version		12.0
+/*/
+//------------------------------------------------------------------------------
+Function PermExcPai(cFilialCli,cCli,cLoja)
+
+Local nX
+Local cFilhos		:= ""
+Local lRet			:= .F.
+Local aFilhos		:= {}
+
+aFilhos	:=	GetChild(cFilialCli,cCli,cLoja)
+
+If !Empty(aFilhos)
+	cFilhos := STR0104 // " pois ele é cliente primário do(s) registro(s) "
+	For nX := 1 To Len(aFilhos)
+		cFilhos +=	aFilhos[nX]
+		If (nX < Len(aFilhos)-1)
+				cFilhos +=	", "
+		ElseIf (nX <> Len(aFilhos))
+				cFilhos +=	 STR0107 // " e " 
+		EndIf		
+	Next
+	Help("",1,STR0101 , , I18N(STR0102,{cCli+cLoja+cFilhos}), 1, ) // "Atenção" ## "Não é possível excluir o cliente #1#. Exclua o(s) vínculo(s) e tente novamente. "
+	lRet	:= .T.
+EndIf 
+
+Return lRet
+
+//------------------------------------------------------------------------------
+/*/{Protheus.doc} FtValConPri
+
+Valid do campo U5_CONPRI, valida a inclusão de filhos na Estrutura de SubClientes.
+
+@sample		MtValCliPri(cFilialCli,cCliPri,cLojPri,cCli,cLoja)
+
+@param			ExpC1 - Filial do cliente
+				ExpC2 - Código do cliente				
+				ExpC3 - Código do cliente primário
+
+@return		ExpA1 - 	.T. permite inclusão
+							.F. não permite inclusão
+
+@author		Cristiane Nishizaka
+@since			05/02/2014
+@version		12.0
+/*/
+//------------------------------------------------------------------------------
+
+Function MtValCliPri(cFilialCli,cCliPri,cLojPri,cCli,cLoja)
+
+Local aArea			:= GetArea()
+Local aAreaSA1		:= SA1->(GetArea())
+Local lRet				:= .T.
+Local aFilhos			:= {}
+Local aFilhosAux		:= {}
+Local nX				:= 0
+Local nY				:= 0
+Local nZ				:= 0
+Local lAllChild		:= .F.
+
+If !Empty(cCliPri)
+	//Se o cliente selecionado for o próprio Cliente do cadastro
+	If cCliPri+cLojPri == cCli+cLoja
+		lRet := .F.	
+	Else
+		If Empty(aFilhos)
+			//Adiciona ao array todos os filhos do cliente
+			aFilhos := GetChild(cFilialCli,cCli,cLoja)
+		EndIf
+		
+		While !lAllChild
+			nY ++  	
+			//Guarda no array auxiliar todos os filhos de cada um dos filhos dos clientes
+			If nY <= Len(aFilhos)
+				cLoja 		:= Right(aFilhos[nY],2)
+				cCli 		:= Left(aFilhos[nY],6)
+				aFilhosAux	:= GetChild(cFilialCli,cCli,cLoja)
+				If !Empty(aFilhosAux)
+					For nZ := 1 To Len(aFilhosAux)
+						//Adiciona ao array todos os filhos dos filhos do cliente 
+						Aadd(aFilhos, aFilhosAux[nZ])
+					Next nZ
+					aFilhosAux := {}
+				EndIf
+			Else 
+				lAllChild	:= .T.
+			EndIf
+		End
+		
+		//Se o CliPri selecionado for um filho ou filho de seus filhos
+		For nX := 1 To Len(aFilhos)
+			If  aFilhos[nX]== cCliPri+cLojPri
+				lRet := .F.			
+			EndIf	
+		Next		
+	EndIf
+EndIf
+
+If !lRet
+	Help("",1,STR0101 , , STR0105, 1, ) // "Atenção" ## "Cliente primário inválido, não é possível criar vínculo. Selecione outro cliente."
+EndIf
+
+RestArea(aArea)
+RestArea(aAreaSA1)
+
+Return  lRet
+
+
+
+
+
+//---------------------------------------------------------------------------------------------------------------
+/*/{Protheus.doc} A030PICTEL
+
+Trata a picture que sera utilizada nos campos A1_TEL e A1_FAX
+
+@sample A030PICTEL()
+
+@param	 cCAmpo - Campo que deverá ser tratado a picture
+			
+@return cRet - picture do campo
+
+@author  Victor Bitencourt		
+@since	  02/04/2015
+@version 12.1.5
+
+/*/
+//---------------------------------------------------------------------------------------------------------------
+Function A030PICTEL(cCampo)    
+
+Local aArea     := GetArea()
+Local aAreaSX3  := SX3->(GetArea())
+Local cRet      := ""
+Local cCriaPtel := GetNewPar("MV_PICTTEL","1")
+
+Default cCampo := ""
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Ajusta a máscara utilizada para digitação do Telefone no SA1 - clientes³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+DbSelectArea("SX3")
+SX3->( DbSetOrder(2) )
+
+cRet := IIF(SX3->(DbSeek(cCampo)), SX3->X3_PICTURE, "")
+
+If cCriaPtel == '1'
+	If cCampo == "A1_TEL" 
+		cRet :=  '@R 9999999999'
+	EndIf
+	If cCampo == "A1_FAX"  
+		cRet := '@R 9999999999'
+	EndIf
+ElseIf cCriaPtel == '2'
+	
+	If cCampo == "A1_TEL" 
+		cRet :=  '@R 9999-9999'
+	EndIf
+	If cCampo == "A1_FAX"  
+		cRet := '@R 9999-9999'
+	EndIf
+EndIf
+
+RestArea(aAreaSX3)
+RestArea(aArea)
+
+Return cRet
+
+
+//---------------------------------------------------------------------------------------------------------------
+/*/{Protheus.doc} A030WHEN
+
+Trata o When do campo A1_COD
+
+@sample A030WHEN()
+
+@param	Nenhum
+			
+@return cRet - Retorno da validação
+
+@author  Victor Bitencourt		
+@since	  02/04/2015
+@version 12.1.4
+
+/*/
+//---------------------------------------------------------------------------------------------------------------
+Function A030WHEN()    
+
+Local lRet := .T.
+//MV_RMCLASS: Parametro de ativacao da integracao do Protheus x RM Classis Net (RM Sistemas)
+//Quando existir a integracao do Protheus x RM Classis Net (RM Sistemas), o campo (Cod. do Cliente) nao sera mais editavel.
+//Sera buscado o codigo sequencial na tabela de controle de numeracao do RM Classis Net (RM Sistemas) atraves da funcao M030PrRMCli()
+If GetNewPar("MV_RMCLASS", .F.)
+	lRet := !GetNewPar("MV_RMCLASS",.F.)
+EndIf
+
+Return lRet
+
+
+//---------------------------------------------------------------------------------------------------------------
+/*/{Protheus.doc} A030INICPD
+
+Trata a inicialização do campo A1_COD
+
+@sample A030INICPD()
+
+@param	 Nenhum
+			
+@return cRet - retorno da Inicialização do Campo		
+
+@author  Victor Bitencourt		
+@since	  02/04/2015
+@version 12.1.5
+
+/*/
+//---------------------------------------------------------------------------------------------------------------
+Function A030INICPD()    
+
+Local cRet := ""
+
+//MV_RMCLASS: Parametro de ativacao da integracao do Protheus x RM Classis Net (RM Sistemas)
+//Quando existir a integracao do Protheus x RM Classis Net (RM Sistemas), o campo (Cod. do Cliente) nao sera mais editavel.
+//Sera buscado o codigo sequencial na tabela de controle de numeracao do RM Classis Net (RM Sistemas) atraves da funcao M030PrRMCli()
+IF GetNewPar("MV_RMCLASS", .F.)     
+	cRet := MA030Relac()
+EndIF
+
+
+Return cRet

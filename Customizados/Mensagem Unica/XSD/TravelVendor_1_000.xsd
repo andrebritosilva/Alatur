@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"	elementFormDefault="qualified">
+	<xs:include schemaLocation="../totvsmsg.xsd"/>
+	<xs:include schemaLocation="../types/ListOfInternalId_1_000.xsd"/>
+	<xs:annotation>
+		<xs:appinfo>
+			<MessageDocumentation>
+				<Name>TravelVendor</Name>
+				<Description>Cadastro de Complemento de Fornecedor</Description>
+				<ProductInformation product="PROTHEUS">
+					<Contact>SIGATUR</Contact>
+					<Adapter>TURI019.PRW</Adapter>
+					<Send>
+						<Insert>SIM</Insert>
+						<Update>SIM</Update>
+						<Delete>SIM</Delete>
+					</Send>
+					<Receive>
+						<Insert>SIM</Insert>
+						<Update>SIM</Update>
+						<Delete>SIM</Delete>
+					</Receive>
+				</ProductInformation>
+			</MessageDocumentation>
+		</xs:appinfo>
+	</xs:annotation>
+	<xs:complexType name="BusinessContentType">
+		<xs:all minOccurs="0" maxOccurs="1">
+			<xs:element name="CompanyId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Empresa</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BranchId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Filial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CompanyInternalId" maxOccurs="1" minOccurs="1" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>InternalId da chave Empresa+Filial</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="VendorCode" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Código do Fornecedor+Loja</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="VendorInternalId" maxOccurs="1" minOccurs="0" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>InternalId do Fornecedor</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Type" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Tipo: 1 - Cia Aérea 2 - Hotel 3 - Locadora de
+						Veículos 4 - Cia Marítima 5 - Cia Rodoviária 6 -
+						Eventos 7 - Outros
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value="3"></xs:enumeration>
+						<xs:enumeration value="4"></xs:enumeration>
+						<xs:enumeration value="5"></xs:enumeration>
+						<xs:enumeration value="6"></xs:enumeration>
+						<xs:enumeration value="7"></xs:enumeration>
+						<xs:enumeration value=""></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="ReportingVendor" maxOccurs="1"
+				minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Reporte? (1 - Sim / 2 - Não)</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value=""></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="BSPVendor" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Pertence BSP?(1 - Sim / 2 - Não)</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value=""></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="IATA" type="xs:string" maxOccurs="1" minOccurs="0"></xs:element>
+			<xs:element name="ShortIATA" type="xs:string" maxOccurs="1" minOccurs="0"></xs:element>
+			<xs:element name="DepartmentReservePhone" type="xs:string" maxOccurs="1" minOccurs="0"></xs:element>
+			<xs:element name="DepartmentReserveFax" type="xs:string" maxOccurs="1" minOccurs="0"></xs:element>
+			<xs:element name="DepartmentReserveEmail" type="xs:string" maxOccurs="1" minOccurs="0"></xs:element>
+			<xs:element name="Blocked" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Bloqueado? ( "1"-Sim / "2"-Não )</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value=""></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="ListOfBrokerSystems"  type="ListOfBrokerSystemsType" maxOccurs="1" minOccurs="0"></xs:element>
+			<xs:element name="ListOfFamily"  type="ListOfFamilyType" maxOccurs="1" minOccurs="0"></xs:element>
+		</xs:all>
+	</xs:complexType>
+
+	<xs:complexType name="ListOfBrokerSystemsType">
+		<xs:sequence>
+			<xs:element name="BrokerSystems"  type="BrokerSystemsType" minOccurs="0" maxOccurs="unbounded" >
+				<xs:annotation>
+					<xs:documentation>Definições de Detalhe dos Itens</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="BrokerSystemsType">
+		<xs:sequence>
+			<xs:element name="Code" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código do Detalhe</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CodeInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalID do Detalhe</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BrokerCode" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Descrição do Detalhe</xs:documentation>
+				</xs:annotation>
+			</xs:element>		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="ListOfFamilyType">
+		<xs:sequence>
+			<xs:element name="Family"  type="FamilyType" minOccurs="1" maxOccurs="unbounded" >
+				<xs:annotation>
+					<xs:documentation>Definições de Detalhe dos Itens</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="FamilyType">
+		<xs:sequence>
+			<xs:element name="Code" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código do Detalhe</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CodeInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalID do Detalhe</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Refund" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Reembolso ( 1-Sim/2-Não)</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value=""></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="Deadline" type="xs:string" maxOccurs="1" minOccurs="0"></xs:element>
+			<xs:element name="DeadlineType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Tipo Prazo (1 - Dia / 2 - Mês / 3 - Ano)</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value="3"></xs:enumeration>
+						<xs:enumeration value=""></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="ListOfPaymentForm"  type="ListOfPaymentFormType" maxOccurs="1" minOccurs="0"></xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="ListOfPaymentFormType">
+		<xs:sequence>
+			<xs:element name="PaymentForm"  type="PaymentFormType" minOccurs="1" maxOccurs="unbounded" ></xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="PaymentFormType">
+		<xs:sequence>
+			<xs:element name="Code" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Código do Detalhe</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="CodeInternalId" type="xs:string" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>InternalID do Detalhe</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Destination" maxOccurs="1"
+				minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Destino (1 - Internacional / 2 - Nacional / 3 - Ambos)</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value="3"></xs:enumeration>
+						<xs:enumeration value=""></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="EntityType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Tipo Cliente (1 - Pessoa Jurídica / 2 - Pessoa Física) </xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1"></xs:enumeration>
+						<xs:enumeration value="2"></xs:enumeration>
+						<xs:enumeration value="3"></xs:enumeration>
+						<xs:enumeration value=""></xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="ReturnContentType">
+		<xs:sequence>
+			<xs:element name="ListOfInternalId"  type="ListOfInternalIdType" maxOccurs="1" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Séries de Internal ID's (Itens/Detalhe)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="BusinessContent" type="BusinessContentType" substitutionGroup="AbstractBusinessContent"/>
+	<xs:element name="ReturnContent" type="ReturnContentType" substitutionGroup="AbstractReturnContent"/>
+</xs:schema>

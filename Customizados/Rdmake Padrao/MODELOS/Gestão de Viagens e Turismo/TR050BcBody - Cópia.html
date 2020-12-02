@@ -1,0 +1,164 @@
+<html>
+	<meta http-equiv="Content-Type" content="text/html;charset=ISO-8859-1">
+	<head>
+		<title>Demonstrativo de Cobrança - Apuração de Receita de Fornecedor</title>
+		<style type="text/css">
+			td { font-family:verdana; font-size:12px}
+			p  { font-family:verdana;}
+		</style>
+	</head>
+	<body>
+		<table style="border:2px; border-style: ridge; " width="100%">
+			<!-- CABECALHO -->
+			<tr width="100%" >
+				<td>
+					<table>
+						<tr><td colspan="2">&nbsp;</td></tr>
+						<tr>
+							<td width="20%" valign="middle"><img src="logo_cliente.png"></td>
+							<td width="80%">
+								<table width="100%">
+									<tr><td align="center"><font size="4"><b>#M0_NOMECOM#</b></font></td></tr>
+									<tr><td align="center">#M0_ENDCOB# - #M0_COMPCOB#</td></tr>
+									<tr><td align="center">#M0_BAIRCOB# - Zip Code: #M0_CEPCOB#</td></tr>
+									<tr><td align="center">#M0_CIDCOB# - #M0_ESTCOB#</td></tr>
+									<tr><td align="center">Phone: +55 #M0_TEL#</td></tr>
+								<table>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr><td colspan="2" align="center"><br/><br/><br/><b><font size="4">INVOICE <br/>(#CODAPU#)</font></b><hr/></td></tr>
+		</table>
+		<table width="100%">
+			<!-- CORPO -->
+			<tr>
+				<td width="100%">
+					<table width="100%">
+						<!-- 1: DADOS DO FORNECEDOR -->
+						<tr>
+							<td width="100%">
+								<table width="100%">
+									<tr>
+										<td bgcolor="#076881" width="15%"><font color="#FFFFFF" size="2px"><b>Date</b></font></td>
+										<td width="85%">#DATAATUAL#</td>
+									</tr>
+									<tr><td colspan="2">&nbsp;</td></tr>
+									<tr>
+										<td bgcolor="#076881"><font color="#FFFFFF" size="2px"><b>Supplier</b></font></td>
+										<td>#A2_COD# - #A2_NREDUZ#</td>
+									</tr>
+									<tr>
+										<td bgcolor="#076881"><font color="#FFFFFF" size="2px"><b>Address</b></font></td>
+										<td>#G4V_ENDER# - #G4V_BAIRRO# - Zip Code: #G4V_CEP# - #G4V_NOMMUN#/#G4V_UF# - #G4V_NMPAIS#</td>
+									</tr>
+									<tr>
+										<td bgcolor="#076881"><font color="#FFFFFF" size="2px"><b>Phone</b></font></td>
+										<td>#G4V_FONE#</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+						<tr><td>&nbsp;</td></tr>
+						<!-- 3: ITENS DE VENDA -->
+						<tr>
+							<td width="100%">
+								<table width="100%" style="border:2px; border-style: solid; ">
+									<tr bgcolor="#076881">
+										<td width="20%" align="center"><font color="#FFFFFF" size="2px">Customer     </font></td>
+										<td width="15%" align="center"><font color="#FFFFFF" size="2px">Our File     </font></td>
+										<td width="10%" align="center"><font color="#FFFFFF" size="2px">Confirmation </font></td>
+										<td width="09%" align="center"><font color="#FFFFFF" size="2px">IATA         </font></td>
+										<td width="08%" align="center"><font color="#FFFFFF" size="2px">Arrival      </font></td>
+										<td width="08%" align="center"><font color="#FFFFFF" size="2px">Departure    </font></td>
+										<td width="05%" align="center"><font color="#FFFFFF" size="2px">Nt's         </font></td>
+										<td width="10%" align="center"><font color="#FFFFFF" size="2px">Rate         </font></td>
+										<td width="10%" align="center"><font color="#FFFFFF" size="2px">Comission Due</font></td>
+										<td width="05%" align="center"><font color="#FFFFFF" size="2px">Currency     </font></td>
+									</tr>
+									#ITENS_DE_VENDA#
+								</table>
+							</td>
+						</tr>
+						<!-- 4: TEXTO 2 -->
+						<tr>
+							<td>
+								<table>
+									<tr><td><b>Total Amount Due #TOTAL#</td></tr>
+								</table>
+							</td>
+						</tr>
+						<tr><td>&nbsp;</td></tr>
+						<!-- 5: DADOS BANCARIOS -->
+						<tr>
+							<td width="100%">
+								<table width="100%">
+									<tr>
+										<td bgcolor="#076881" width="30%"><font color="#FFFFFF" size="2px"><b>Receiving Bank ABA</b></font></td>
+										<td width="70%">021000089</td>
+									</tr>
+									<tr>
+										<td bgcolor="#076881"><font color="#FFFFFF" size="2px"><b>Receiving Bank Name</b></font></td>
+										<td>CITIBANK N.A.</td>
+									</tr>
+									<tr>
+										<td bgcolor="#076881"><font color="#FFFFFF" size="2px"><b>Receiving Bank Address</b></font></td>
+										<td>NEW YORK NY</td>
+									</tr>
+									<tr>
+										<td bgcolor="#076881"><font color="#FFFFFF" size="2px"><b>Beneficiary Account</b></font></td>
+										<td>36324197</td>
+									</tr>
+									<tr>
+										<td bgcolor="#076881"><font color="#FFFFFF" size="2px"><b>Beneficiary Name</b></font></td>
+										<td>ALATUR VIAGENS E TURISMO S.A.</td>
+									</tr>
+									<tr>
+										<td bgcolor="#076881"><font color="#FFFFFF" size="2px"><b>Beneficiary Full Address</b></font></td>
+										<td>AV SAO LUIS, 50 CENTRO, SAO PAULO, SP, BRASIL, 01046-000</td>
+									</tr>
+									<tr>
+										<td bgcolor="#076881"><font color="#FFFFFF" size="2px"><b>CNPJ</b></font></td>
+										<td>15.279.665/0001-53</td>
+									</tr>
+									<tr>
+										<td bgcolor="#076881"><font color="#FFFFFF" size="2px"><b>IATA</b></font></td>
+										<td>57503515</td>
+									</tr>
+									<tr>
+										<td bgcolor="#076881"><font color="#FFFFFF" size="2px"><b>Swift Code</b></font></td>
+										<td>CITIUS33</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+						<tr><td>&nbsp;</td></tr>
+						<!-- 5: TEXTO 3 -->
+						<tr>
+							<td width="100%">
+								<table width="100%">
+									<tr><td><u><b>Bank Full Address</b></u></td></tr>
+									<tr><td>Citibank, National Association</td></tr>
+									<tr><td>Station Plaza Branch</td></tr>
+									<tr><td>41 Front Street</td></tr>
+									<tr><td>Rockville Centre , New York 11570</td></tr>
+									<tr><td>Office Number: 940</td></tr>
+									<tr><td>Office Established 3/5/2005 | Cert: 7213</td></tr>
+									<tr><td>Service Type 11 | Nassau</td></tr>
+									<tr><td><br/><br/><br/><hr/></td></tr>
+									<tr><td>Best Regards,</td></tr>
+									<tr><td>&nbsp;</td></tr>
+									<tr><td>Commission Payment Control</td></tr>
+									<tr><td>Rosangela Oliveira / Claudia Regina / Takako Oshiro</td></tr>
+									<tr><td>E-mail: <a href="mailto:commission@alatur.com">commission@alatur.com</a></td></tr>
+									<tr><td>Phones: 55(11)3217-6143 / 55(11)3217-9031 /  55(11)3217-7287</td></tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+	</body>
+</html>
